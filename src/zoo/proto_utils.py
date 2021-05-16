@@ -45,10 +45,10 @@ def accuracy(predictions, targets):
     return (predictions == targets).sum().float() / targets.size(0)
 
 def logits(support, queries, n, k, q):
-    prototypes = support.view(n, q, -1).mean(dim=1)
+    prototypes = support.view(n, k, -1).mean(dim=1)
     a = queries.shape[0]
-    b = support.shape[0]
-    logits = -((queries.unsqueeze(1).expand(a,b,-1) - support.unsqueeze(0).expand(a,b,-1))**2).sum(dim=2)
+    b = prototypes.shape[0]
+    logits = -((queries.unsqueeze(1).expand(a,b,-1) - prototypes.unsqueeze(0).expand(a,b,-1))**2).sum(dim=2)
     return logits
 
 def inner_adapt_proto(task, loss, learner, n_ways, k_shots, q_shots, device):
