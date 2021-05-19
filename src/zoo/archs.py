@@ -1,5 +1,6 @@
 import torch
 from scipy.stats import truncnorm
+from torch._C import device
 
 
 def truncated_normal_(tensor, mean=0.0, std=1.0):
@@ -99,7 +100,7 @@ class ConvBase(torch.nn.Sequential):
             block.append(ConvBlock(in_channels=hidden, out_channels=hidden, kernel_size=(3, 3),
                          max_pool=max_pool, stride=stride))
         block.append(ConvBlock(in_channels=hidden, out_channels=out_channels, kernel_size=(3, 3),
-                         max_pool=max_pool, stride=stride))
+                               max_pool=max_pool, stride=stride))
 
         super(ConvBase, self).__init__(*block)
 
@@ -181,6 +182,7 @@ class MiniImageCNN(torch.nn.Module):
         x = self.classifier(x)
         return x
 
+
 class EncoderNN(torch.nn.Module):
     def __init__(self, channels, stride, max_pool, hidden_size=64, layers=4):
         super(EncoderNN, self).__init__()
@@ -195,3 +197,89 @@ class EncoderNN(torch.nn.Module):
     def forward(self, x):
         x = self.encoder(x)
         return x
+
+
+class BidirLSTM(torch.nn.Module):
+    def __init__(self, size, layers):
+        """Bidirectional LSTM used to generate fully conditional embeddings (FCE) of the support set.
+        # Arguments:-
+        size: Size of input and hidden layers (must be same to enable skip-connections)
+        layers: Number of LSTM layers
+        """
+        super(BidirLSTM, self).__init__()
+        self.num_layers = layers
+        self.batch_size = 1
+
+        self.lstm = torch.nn.LSTM(input_size=size,
+                                  num_layers=layers,
+                                  hidden_size=size,
+                                  bidirectional=True)
+
+    def forward(self, x):
+        output, (hn, cn) = self.lstm(x, None)
+        forward_output = output[:, :, :self.lstm.hidden_size]
+        backward_output = output[:, :, self.lstm.hidden_size:]
+        # Skip connection between inputs and outputs
+        output = forward_output + backward_output + x
+        return output, hn, cn
+
+
+class attLSTM(torch.nn.Module):
+    def __init__(self, size, unrolling_steps):
+        """Attentional LSTM used to generate fully conditional embeddings (FCE) of the query set.
+        # Arguments:-
+        size: Size of input and hidden layers (must be same to enable skip-connections)
+        unrolling_steps: Number of steps of attention over the support set to compute. Analogous to number of
+            layers in a regular LSTM
+        """
+        super(attLSTM, self).__init__()
+        self.unrolling_steps = unrolling_steps
+        self.lstm_cell = torch.nn.LSTMCell(input_size=size,
+                                           hidden_size=size)
+
+    def forward(self, support, queries, device):
+
+        batch_size = queries.shape[0]
+        embedding_dim = queries.shape[1]
+
+        h_hat = torch.zeros_like(queries).to(device).double()
+        c = torch.zeros(batch_size, embedding_dim).to(device).double()
+
+        for k in range(self.unrolling_steps):
+            h = h_hat + queries
+            attentions = torch.mm(h, support.t())
+            attentions = attentions.softmax(dim=1)
+            readout = torch.mm(attentions, support)
+            h_hat, c = self.lstm_cell(queries, (h + readout, c))
+
+        h = h_hat + queries
+
+        return h
+
+class MatchingNetwork(torch.nn.Module):
+    def __init__(self, num_input_channels, stride, max_pool,
+                 lstm_layers, lstm_input_size, unrolling_steps, device):
+        """Creates a Matching Network.
+        # Arguments:-
+            num_input_channels: Number of color channels the model expects input data to contain. Omniglot = 1,
+                miniImageNet = 3
+            stride: stride for EncodderNN
+            max_pool: bool for EncodderNN
+            lstm_layers: Number of LSTM layers in the bidrectional LSTM g that embeds the support set (fce = True)
+            lstm_input_size: Input size for the bidirectional and Attention LSTM. This is determined by the embedding
+                dimension of the few shot encoder which is in turn determined by the size of the input data. Hence we
+                have Omniglot -> 64, miniImageNet -> 1600.
+            unrolling_steps: Number of unrolling steps to run the Attention LSTM
+            device: Device on which to run computation
+        """
+        super(MatchingNetwork, self).__init__()
+        self.stride = stride
+        self.max_pool = max_pool
+        self.num_input_channels = num_input_channels
+        self.encoder = EncoderNN(self.num_input_channels, self.stride, self.max_pool)
+        self.support_encoder = BidirLSTM(lstm_input_size, lstm_layers).to(device, dtype=torch.double)
+        self.query_encoder = attLSTM(lstm_input_size, unrolling_steps=unrolling_steps).to(device, dtype=torch.double)
+
+    def forward(self, x):
+        pass
+

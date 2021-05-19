@@ -130,7 +130,6 @@ class MiniImageNet(Dataset):
             self.data["image_data"]).permute(0, 3, 1, 2).float()
         self.y = np.ones(len(self.x))
 
-        # TODO Remove index_classes from here
         self.class_idx = index_classes(self.data['class_dict'].keys())
         for class_name, idxs in self.data['class_dict'].items():
             for idx in idxs:
