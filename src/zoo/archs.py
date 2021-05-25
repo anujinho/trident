@@ -242,8 +242,8 @@ class attLSTM(torch.nn.Module):
         batch_size = queries.shape[0]
         embedding_dim = queries.shape[1]
 
-        h_hat = torch.zeros_like(queries).to(device).double()
-        c = torch.zeros(batch_size, embedding_dim).to(device).double()
+        h_hat = torch.zeros_like(queries).to(device)
+        c = torch.zeros(batch_size, embedding_dim).to(device)
 
         for k in range(self.unrolling_steps):
             h = h_hat + queries
@@ -255,6 +255,7 @@ class attLSTM(torch.nn.Module):
         h = h_hat + queries
 
         return h
+
 
 class MatchingNetwork(torch.nn.Module):
     def __init__(self, num_input_channels, stride, max_pool,
@@ -276,10 +277,16 @@ class MatchingNetwork(torch.nn.Module):
         self.stride = stride
         self.max_pool = max_pool
         self.num_input_channels = num_input_channels
-        self.encoder = EncoderNN(self.num_input_channels, self.stride, self.max_pool)
-        self.support_encoder = BidirLSTM(lstm_input_size, lstm_layers).to(device, dtype=torch.double)
-        self.query_encoder = attLSTM(lstm_input_size, unrolling_steps=unrolling_steps).to(device, dtype=torch.double)
+        self.encoder = EncoderNN(
+            self.num_input_channels, self.stride, self.max_pool).to(device)
+        self.support_encoder = BidirLSTM(
+            lstm_input_size, lstm_layers).to(device)
+        self.query_encoder = attLSTM(
+            lstm_input_size, unrolling_steps=unrolling_steps).to(device)
 
     def forward(self, x):
         pass
 
+# class Siamese(torch.nn.Module):
+#     def __init__(self, ):
+#         super(Siamese).__init__()

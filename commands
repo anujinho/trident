@@ -1,0 +1,46 @@
+**MAML Reproduction**
+
+python -m src.maml --dataset omniglot --root /home/anuj/Desktop/Work/TU_Delft/research/implement/omniglot --n-ways 5 --k-shots 1 --q-shots 1 --inner-adapt-steps 1 --inner-lr 0.5 --meta-lr 0.003 --meta-batch-size 32 --iterations 60000 --order False --device cuda
+
+python -m src.maml --dataset miniimagenet --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 5 --k-shots 1 --q-shots 1 --inner-adapt-steps 1 --inner-lr 0.5 --meta-lr 0.003 --meta-batch-size 32 --iterations 60000 --order False --device cuda
+
+
+**ProtoNets Reproduction**
+
+*5 way, 1/5 Shot Omniglot*
+python -m src.proto --dataset omniglot --root /home/anuj/Desktop/Work/TU_Delft/research/implement/omniglot --n-ways 60 --k-shots 1 --q-shots 5 --test-ways 5 --test-shots 1 --test-queries 5 --lr 0.001 --meta-batch-size 100 --iterations 250 --device cuda
+
+*5 way, 1 shot Mini*
+python -m src.proto --dataset miniimagenet --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 30 --k-shots 1 --q-shots 15 --test-ways 5 --test-shots 1 --test-queries 30 --lr 0.001 --meta-batch-size 100 --iterations 250 --device cuda
+
+*5 way, 5 shot Mini*
+python -m src.proto --dataset miniimagenet --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 20 --k-shots 5 --q-shots 15 --test-ways 5 --test-shots 5 --test-queries 30 --lr 0.001 --meta-batch-size 100 --iterations 250 --device cuda
+
+
+**MatchingNets Reproduction**
+
+*5 way 1 shot Omniglot*
+python -m src.matching_nets --dataset omniglot --root /home/anuj/Desktop/Work/TU_Delft/research/implement/omniglot --n-ways 5 --k-shots 1 --q-shots 15 --test-ways 5 --test-shots 1 --test-queries 1 --lr 0.001 --meta-batch-size 100 --iterations 100 --layers 1 --unrolling-steps 2 --device cuda
+
+*5 way 5 shot Omniglot*
+python -m src.matching_nets --dataset omniglot --root /home/anuj/Desktop/Work/TU_Delft/research/implement/omniglot --n-ways 5 --k-shots 5 --q-shots 15 --test-ways 5 --test-shots 5 --test-queries 1 --lr 0.001 --meta-batch-size 100 --iterations 100 --layers 1 --unrolling-steps 2 --device cuda
+
+*5 way 1 shot Mini*
+python -m src.matching_nets --dataset miniimagenet --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 5 --k-shots 1 --q-shots 15 --test-ways 5 --test-shots 1 --test-queries 1 --lr 0.001 --meta-batch-size 100 --iterations 200 --layers 1 --unrolling-steps 2 --device cuda
+
+*5 way 5 shot Mini*
+python -m src.matching_nets --dataset omniglot --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 5 --k-shots 5 --q-shots 15 --test-ways 5 --test-shots 5 --test-queries 1 --lr 0.001 --meta-batch-size 100 --iterations 200 --layers 1 --unrolling-steps 2 --device cuda
+
+
+
+
+
+
+
+
+
+
+
+
+
+

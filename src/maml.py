@@ -9,6 +9,7 @@ from torch import nn, optim
 
 from src.zoo.maml_utils import inner_adapt_maml, setup
 from src.utils import Profiler
+from src.config import maml_omniglot, maml_mini
 
 ##############
 # Parameters #
@@ -60,11 +61,11 @@ for iter in tqdm.tqdm(range(args.iterations)):
     meta_valid_loss.append(validation_loss.item())
     meta_valid_acc.append(validation_accuracy.item())
 
-    profiler.log(np.array(meta_train_acc).mean(), np.array(meta_train_acc).std(), np.array(meta_train_loss).mean(), np.array(meta_train_loss).std(), np.array(
+    profiler.log([np.array(meta_train_acc).mean(), np.array(meta_train_acc).std(), np.array(meta_train_loss).mean(), np.array(meta_train_loss).std(), np.array(
             meta_valid_acc).mean(), np.array(
             meta_valid_acc).std(), np.array(
             meta_valid_loss).mean(), np.array(
-            meta_valid_loss).std())
+            meta_valid_loss).std()])
 
     if (iter%500 == 0):
         print('Meta Train Accuracy: {:.4f} +- {:.4f}'.format(np.array(meta_train_acc).mean(), np.array(meta_train_acc).std()))
@@ -74,16 +75,22 @@ for iter in tqdm.tqdm(range(args.iterations)):
         p.grad.data.mul_(1.0 / args.meta_batch_size)
     opt.step()
 
+#torch.save(learner, f='../repro')
+
 ## Testing ##
 print('Testing on held out classes')
-for batch in range(args.meta_batch_size):
+prof_test = Profiler('MAML_test_{}_{}-shot_{}-way_{}-queries'.format(
+    args.dataset, args.n_ways, args.k_shots, args.q_shots))
+for i, tetask in enumerate(test_tasks):
     meta_test_acc = []
     meta_test_loss = []
     model = learner.clone()
-    tetask = test_tasks.sample()
+    #tetask = test_tasks.sample()
     evaluation_loss, evaluation_accuracy = inner_adapt_maml(
         tetask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps, args.device)
     meta_test_loss.append(evaluation_loss.item())
     meta_test_acc.append(evaluation_accuracy.item())
-    print('Meta Test Accuracy', np.array(meta_test_acc).mean(), '+-', np.np.array(meta_test_acc).std())
+    prof_test.log(row = [np.array(meta_test_acc).mean(), np.array(meta_test_acc).std(
+    ), np.array(meta_test_loss).mean(), np.array(meta_test_loss).std()])
+    print('Meta Test Accuracy', np.array(meta_test_acc).mean(), '+-', np.array(meta_test_acc).std())
     

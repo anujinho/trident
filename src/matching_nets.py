@@ -19,6 +19,9 @@ parser.add_argument('--root', type=str)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
+parser.add_argument('--test-ways', type=int)
+parser.add_argument('--test-shots', type=int)
+parser.add_argument('--test-queries', type=int)
 parser.add_argument('--lr', type=float)
 parser.add_argument('--meta-batch-size', type=int)
 parser.add_argument('--iterations', type=int)
@@ -31,7 +34,7 @@ EPSILON = 1e-8
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.layers, args.unrolling_steps, args.device)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, args.layers, args.unrolling_steps, args.device)
 opt = optim.Adam(learner.parameters(), args.lr)
 loss = nn.NLLLoss()
 lr_scheduler = torch.optim.lr_scheduler.StepLR(
@@ -56,7 +59,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
         meta_train_loss.append(evaluation_loss.item())
         meta_train_acc.append(evaluation_accuracy.item())
         evaluation_loss.backward()
-        torch.nn.clip_grad_norm_(learner.parameters(), 1)
+        torch.nn.utils.clip_grad_norm_(learner.parameters(), 1)
         opt.step()
     lr_scheduler.step()
 
@@ -88,7 +91,7 @@ for i, tetask in enumerate(test_tasks):
     meta_test_acc = []
     meta_test_loss = []
     evaluation_loss, evaluation_accuracy = inner_adapt_matching(
-        tetask, loss, learner, args.n_ways, args.k_shots, args.q_shots, args.device)
+        tetask, loss, learner, args.test_ways, args.test_shots, args.test_queries, args.device)
     meta_test_loss.append(evaluation_loss.item())
     meta_test_acc.append(evaluation_accuracy.item())
     prof_test.log(row = [np.array(meta_test_acc).mean(), np.np.array(meta_test_acc).std(

@@ -31,7 +31,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device):
         valid_tasks = gen_tasks(dataset, root, mode='validation',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
         test_tasks = gen_tasks(dataset, root, mode='test',
-                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
+                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = MiniImageCNN(output_size=n_ways, stride=(2, 2))
 
     learner = learner.to(device)

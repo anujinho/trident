@@ -8,7 +8,7 @@ from torchvision import transforms
 from src.zoo.archs import EncoderNN
 
 
-def setup(dataset, root, n_ways, k_shots, q_shots, device):
+def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_queries, device):
     if dataset == 'omniglot':
         channels = 1
         image_trans = transforms.Compose([transforms.Resize(
@@ -19,9 +19,9 @@ def setup(dataset, root, n_ways, k_shots, q_shots, device):
         train_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[:1100], num_tasks=20000)
         valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, n_ways=n_ways,
-                                k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=1024)
+                                k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=200)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
-                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[1200:], num_tasks=1024)
+                               n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, classes=classes[1200:], num_tasks=200)
         
     elif dataset == 'miniimagenet':
         channels = 3
@@ -29,9 +29,9 @@ def setup(dataset, root, n_ways, k_shots, q_shots, device):
         train_tasks = gen_tasks(dataset, root, mode='train',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
         valid_tasks = gen_tasks(dataset, root, mode='validation',
-                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=200)
         test_tasks = gen_tasks(dataset, root, mode='test',
-                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
+                               n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, num_tasks=200)
         
     learner = EncoderNN(channels=channels, max_pool=True, stride=(2,2))
     learner = learner.to(device)
@@ -62,7 +62,7 @@ def inner_adapt_proto(task, loss, learner, n_ways, k_shots, q_shots, device):
         queries_index[np.random.choice(
             k_shots+q_shots, q_shots, replace=False) + ((k_shots + q_shots)*offset)] = True
     support = data[np.where(queries_index == 0)]
-    support_labels = labels[np.where(queries_index == 0)]
+    #support_labels = labels[np.where(queries_index == 0)]
     queries = data[np.where(queries_index == 1)]
     queries_labels = labels[np.where(queries_index == 1)]
 

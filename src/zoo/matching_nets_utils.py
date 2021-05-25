@@ -9,34 +9,32 @@ from torchvision import transforms
 from src.zoo.archs import MatchingNetwork
 
 
-def setup(dataset, root, n_ways, k_shots, q_shots, layers, unrolling_steps, device):
+def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_queries, layers, unrolling_steps, device):
     if dataset == 'omniglot':
         channels = 1
-        max_pool = False
+        max_pool = True
         size = 64
         image_trans = transforms.Compose([transforms.Resize(
             28, interpolation=LANCZOS), transforms.ToTensor(), lambda x: 1-x])
         classes = list(range(1623))  # Total classes in Omniglot
         random.shuffle(classes)
-        # Generating tasks and model according to the MAML implementation for Omniglot
         train_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[:1100], num_tasks=20000)
         valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, n_ways=n_ways,
                                 k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=1024)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
-                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[1200:], num_tasks=1024)
+                               n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, classes=classes[1200:], num_tasks=1024)
 
     elif dataset == 'miniimagenet':
         channels = 3
         max_pool = True
         size = 1600
-        # Generating tasks and model according to the MAML implementation for MiniImageNet
         train_tasks = gen_tasks(dataset, root, mode='train',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
         valid_tasks = gen_tasks(dataset, root, mode='validation',
-                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=200)
         test_tasks = gen_tasks(dataset, root, mode='test',
-                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
+                               n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, num_tasks=200)
 
     match_net = MatchingNetwork(num_input_channels=channels, stride=(
         2, 2), max_pool=max_pool, lstm_input_size=size, lstm_layers=layers, unrolling_steps=unrolling_steps, device=device)
@@ -86,19 +84,17 @@ def inner_adapt_matching(task, loss, learner, n_ways, k_shots, q_shots, EPSILON,
 
     support, _, _ = learner.support_encoder(support.unsqueeze(1))
     support = support.squeeze(1)
-    queries = learner.query_encoder(queries, support)
+    queries = learner.query_encoder(queries, support, device)
 
     preds = logits(queries=queries, support=support, EPSILON=EPSILON)
     attention = (-preds).softmax(dim=1)
 
-    y_onehot = torch.zeros(n_ways * k_shots, n_ways)
+    y_onehot = torch.zeros(n_ways * k_shots, n_ways).to(device)
 
-    # Unsqueeze to force y to be of shape (K*n, 1) as this
-    # is needed for .scatter()
     y = support_labels.unsqueeze(-1)
     y_onehot = y_onehot.scatter(1, y, 1)
 
-    y_pred = torch.mm(attention, y_onehot.cuda().double())
+    y_pred = torch.mm(attention, y_onehot.to(device))
 
     # Calculated loss with negative log likelihood
     # Clip predictions for numerical stability
