@@ -66,7 +66,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
     learner.eval()
     for i, vtask in enumerate(valid_tasks):
         validation_loss, validation_accuracy = inner_adapt_matching(
-            vtask, loss, learner, args.n_ways, args.k_shots, args.q_shots, args.device)
+            vtask, loss, learner, args.n_ways, args.k_shots, args.q_shots, EPSILON, args.device)
         meta_valid_loss.append(validation_loss.item())
         meta_valid_acc.append(validation_accuracy.item())
 
@@ -85,16 +85,16 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
 ## Testing ##
 prof_test = Profiler('MatchingNets_test_{}_{}-shot_{}-way_{}-queries'.format(
-    args.dataset, args.n_ways, args.k_shots, args.q_shots))
+    args.dataset, args.test_ways, args.test_shots, args.test_queries))
 print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):
     meta_test_acc = []
     meta_test_loss = []
     evaluation_loss, evaluation_accuracy = inner_adapt_matching(
-        tetask, loss, learner, args.test_ways, args.test_shots, args.test_queries, args.device)
+        tetask, loss, learner, args.test_ways, args.test_shots, args.test_queries, EPSILON, args.device)
     meta_test_loss.append(evaluation_loss.item())
     meta_test_acc.append(evaluation_accuracy.item())
-    prof_test.log(row = [np.array(meta_test_acc).mean(), np.np.array(meta_test_acc).std(
-    ), np.array(meta_test_loss).mean(), np.np.array(meta_test_loss).std()])
+    prof_test.log(row = [np.array(meta_test_acc).mean(), np.array(meta_test_acc).std(
+    ), np.array(meta_test_loss).mean(), np.array(meta_test_loss).std()])
     print('Meta Test Accuracy', np.array(meta_test_acc).mean(),
-          '+-', np.np.array(meta_test_acc).std())
+          '+-', np.array(meta_test_acc).std())

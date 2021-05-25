@@ -84,7 +84,7 @@ def inner_adapt_matching(task, loss, learner, n_ways, k_shots, q_shots, EPSILON,
 
     support, _, _ = learner.support_encoder(support.unsqueeze(1))
     support = support.squeeze(1)
-    queries = learner.query_encoder(queries, support, device)
+    queries = learner.query_encoder(support, queries, device)
 
     preds = logits(queries=queries, support=support, EPSILON=EPSILON)
     attention = (-preds).softmax(dim=1)

@@ -82,7 +82,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
 ## Testing ##
 prof_test = Profiler('ProNets_test_{}_{}-shot_{}-way_{}-queries'.format(
-    args.dataset, args.n_ways, args.k_shots, args.q_shots))
+    args.dataset, args.test_ways, args.test_shots, args.test_queries))
 print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):
     meta_test_acc = []
