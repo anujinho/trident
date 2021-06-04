@@ -63,7 +63,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
     learner.eval()
     for i, vtask in enumerate(valid_tasks):
         validation_loss, validation_accuracy = inner_adapt_proto(
-            vtask, loss, learner, args.n_ways, args.k_shots, args.q_shots, args.device)
+            vtask, loss, learner, args.test_ways, args.test_shots, args.test_queries, args.device)
         meta_valid_loss.append(validation_loss.item())
         meta_valid_acc.append(validation_accuracy.item())
 

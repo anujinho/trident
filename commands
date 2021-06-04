@@ -2,7 +2,7 @@
 
 python -m src.maml --dataset omniglot --root /home/anuj/Desktop/Work/TU_Delft/research/implement/omniglot --n-ways 5 --k-shots 1 --q-shots 1 --inner-adapt-steps 1 --inner-lr 0.5 --meta-lr 0.003 --meta-batch-size 32 --iterations 60000 --order False --device cuda
 
-python -m src.maml --dataset miniimagenet --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 5 --k-shots 1 --q-shots 1 --inner-adapt-steps 1 --inner-lr 0.5 --meta-lr 0.003 --meta-batch-size 32 --iterations 60000 --order False --device cuda
+python -m src.maml --dataset miniimagenet --root /home/anuj/Desktop/Work/TU_Delft/research/implement/mini_imagenet --n-ways 5 --k-shots 1 --q-shots 15 --inner-adapt-steps-train 5 --inner-adapt-steps-test 10 --inner-lr 0.4 --meta-lr 0.001 --meta-batch-size 4 --iterations 60000 --order False --device cuda
 
 
 **ProtoNets Reproduction**

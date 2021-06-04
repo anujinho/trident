@@ -20,7 +20,8 @@ parser.add_argument('--root', type=str)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
-parser.add_argument('--inner-adapt-steps', type=int)
+parser.add_argument('--inner-adapt-steps-train', type=int)
+parser.add_argument('--inner-adapt-steps-test', type=int)
 parser.add_argument('--inner-lr', type=float)
 parser.add_argument('--meta-lr', type=float)
 parser.add_argument('--meta-batch-size', type=int)
@@ -49,7 +50,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
         ttask = train_tasks.sample()
         model = learner.clone()
         evaluation_loss, evaluation_accuracy = inner_adapt_maml(
-            ttask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps, args.device)
+            ttask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device)
         evaluation_loss.backward()
         meta_train_loss.append(evaluation_loss.item())
         meta_train_acc.append(evaluation_accuracy.item())
@@ -57,7 +58,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
     vtask = valid_tasks.sample()
     model = learner.clone()
     validation_loss, validation_accuracy = inner_adapt_maml(
-        vtask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps, args.device)
+        vtask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device)
     meta_valid_loss.append(validation_loss.item())
     meta_valid_acc.append(validation_accuracy.item())
 
@@ -87,7 +88,7 @@ for i, tetask in enumerate(test_tasks):
     model = learner.clone()
     #tetask = test_tasks.sample()
     evaluation_loss, evaluation_accuracy = inner_adapt_maml(
-        tetask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps, args.device)
+        tetask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device)
     meta_test_loss.append(evaluation_loss.item())
     meta_test_acc.append(evaluation_accuracy.item())
     prof_test.log(row = [np.array(meta_test_acc).mean(), np.array(meta_test_acc).std(

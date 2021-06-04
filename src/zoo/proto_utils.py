@@ -29,7 +29,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
         train_tasks = gen_tasks(dataset, root, mode='train',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
         valid_tasks = gen_tasks(dataset, root, mode='validation',
-                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=200)
+                                n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, num_tasks=200)
         test_tasks = gen_tasks(dataset, root, mode='test',
                                n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, num_tasks=200)
         
