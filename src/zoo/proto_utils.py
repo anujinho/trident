@@ -1,9 +1,11 @@
 import random
 
 import numpy as np
+import torch
 from data.taskers import gen_tasks
 from PIL.Image import LANCZOS
 from torchvision import transforms
+from torch.utils.data import DataLoader
 
 from src.zoo.archs import EncoderNN
 
@@ -33,6 +35,10 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
         test_tasks = gen_tasks(dataset, root, mode='test',
                                n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, num_tasks=200)
         
+#     train_loader = DataLoader(train_tasks, pin_memory=True, shuffle=True)
+#     valid_loader = DataLoader(valid_tasks, pin_memory=True, shuffle=True)
+#     test_loader = DataLoader(test_tasks, pin_memory=True, shuffle=True)
+        
     learner = EncoderNN(channels=channels, max_pool=True, stride=(2,2))
     learner = learner.to(device)
     
@@ -50,9 +56,14 @@ def logits(support, queries, n, k, q):
     logits = -((queries.unsqueeze(1).expand(a,b,-1) - prototypes.unsqueeze(0).expand(a,b,-1))**2).sum(dim=2)
     return logits
 
+
 def inner_adapt_proto(task, loss, learner, n_ways, k_shots, q_shots, device):
     data, labels = task
     data, labels = data.to(device), labels.to(device)
+    #data, labels = data.squeeze(0), labels.squeeze(0)
+    sort = torch.sort(labels)
+    data = data.squeeze(0)[sort.indices].squeeze(0)
+    labels = labels.squeeze(0)[sort.indices].squeeze(0)
     total = n_ways * (k_shots + q_shots)
     queries_index = np.zeros(total)
 

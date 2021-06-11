@@ -1,6 +1,7 @@
 import torch
 from scipy.stats import truncnorm
 from torch._C import device
+from torch import nn
 
 
 def truncated_normal_(tensor, mean=0.0, std=1.0):
@@ -72,8 +73,8 @@ class ConvBlock(torch.nn.Module):
         self.norm = torch.nn.BatchNorm2d(num_features=out_channels)
         self.relu = torch.nn.ReLU()
         torch.nn.init.uniform_(self.norm.weight)
-        torch.nn.init.xavier_uniform_(self.conv.weight.data)
-        torch.nn.init.constant_(self.conv.bias.data, 0.0)
+#         torch.nn.init.xavier_uniform_(self.conv.weight.data)
+#         torch.nn.init.constant_(self.conv.bias.data, 0.0)
 
     def forward(self, x):
         x = self.conv(x)
@@ -290,3 +291,5 @@ class MatchingNetwork(torch.nn.Module):
 # class Siamese(torch.nn.Module):
 #     def __init__(self, ):
 #         super(Siamese).__init__()
+
+

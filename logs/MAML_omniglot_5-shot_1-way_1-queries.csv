@@ -1,2 +1,0 @@
-train_acc_mean,train_acc_std,train_loss_mean,train_loss_std,valid_acc_mean,valid_acc_std,valid_loss_mean,valid_loss_std
-0.38125000754371285,0.17577951881761564,2.0475943870842457,0.5725253799209454,0.4000000059604645,0.0,2.1940112113952637,0.0

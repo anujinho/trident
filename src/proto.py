@@ -3,9 +3,10 @@ import argparse
 #import learn2learn as l2l
 import numpy as np
 import torch
-#import torch.nn.functional as F
+import torch.nn.functional as F
 import tqdm
 from torch import nn, optim
+from torch.utils.data import DataLoader
 
 from src.zoo.proto_utils import inner_adapt_proto, setup
 from src.utils import Profiler
@@ -37,11 +38,11 @@ opt = optim.Adam(learner.parameters(), args.lr)
 loss = nn.CrossEntropyLoss()
 lr_scheduler = torch.optim.lr_scheduler.StepLR(
     opt, step_size=20, gamma=0.5)
-profiler = Profiler('ProNets_{}_{}-shot_{}-way_{}-queries'.format(
+profiler = Profiler('ProNets_{}_{}-way_{}-shot_{}-queries'.format(
     args.dataset, args.n_ways, args.k_shots, args.q_shots))
 
 ## Training ##
-for iter in tqdm.tqdm(range(args.iterations)):
+for iteration in tqdm.tqdm(range(args.iterations)):
 
     meta_train_loss = []
     meta_valid_loss = []
@@ -73,7 +74,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
         meta_valid_loss).mean(), np.array(
         meta_valid_loss).std()])
 
-    if (iter % 10 == 0):
+    if (iteration % 10 == 0):
         print('Meta Train Accuracy: {:.4f} +- {:.4f}'.format(
             np.array(meta_train_acc).mean(), np.array(meta_train_acc).std()))
         print('Meta Valid Accuracy: {:.4f} +- {:.4f}'.format(
@@ -81,7 +82,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
 
 ## Testing ##
-prof_test = Profiler('ProNets_test_{}_{}-shot_{}-way_{}-queries'.format(
+prof_test = Profiler('ProNets_test_{}_{}-way_{}-shot_{}-queries'.format(
     args.dataset, args.test_ways, args.test_shots, args.test_queries))
 print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):

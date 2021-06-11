@@ -21,7 +21,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
         train_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[:1100], num_tasks=20000)
         valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, n_ways=n_ways,
-                                k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=1024)
+                                k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=200)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                n_ways=test_ways, k_shots=test_shots, q_shots=test_queries, classes=classes[1200:], num_tasks=1024)
 

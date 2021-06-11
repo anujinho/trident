@@ -36,8 +36,14 @@ train_tasks, valid_tasks, test_tasks, learner = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 loss = nn.CrossEntropyLoss(reduction='mean')
-profiler = Profiler('MAML_{}_{}-shot_{}-way_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
+if args.order == False:
+    profiler = Profiler('MAML_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
+    prof_test = Profiler('MAML_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
+elif args.order == True:
+    profiler = Profiler('FO-MAML_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
+    prof_test = Profiler('FO-MAML_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
 
+    
 ## Training ##
 for iter in tqdm.tqdm(range(args.iterations)):
     opt.zero_grad()
@@ -80,8 +86,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
 ## Testing ##
 print('Testing on held out classes')
-prof_test = Profiler('MAML_test_{}_{}-shot_{}-way_{}-queries'.format(
-    args.dataset, args.n_ways, args.k_shots, args.q_shots))
+
 for i, tetask in enumerate(test_tasks):
     meta_test_acc = []
     meta_test_loss = []

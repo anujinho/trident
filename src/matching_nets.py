@@ -39,7 +39,7 @@ opt = optim.Adam(learner.parameters(), args.lr)
 loss = nn.NLLLoss()
 lr_scheduler = torch.optim.lr_scheduler.StepLR(
     opt, step_size=20, gamma=0.5)
-profiler = Profiler('MatchingNets_{}_{}-shot_{}-way_{}-queries'.format(
+profiler = Profiler('MatchingNets_{}_{}-way_{}-shot_{}-queries'.format(
     args.dataset, args.n_ways, args.k_shots, args.q_shots))
 
 ## Training ##
@@ -84,7 +84,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
 
 ## Testing ##
-prof_test = Profiler('MatchingNets_test_{}_{}-shot_{}-way_{}-queries'.format(
+prof_test = Profiler('MatchingNets_test_{}_{}-way_{}-shot_{}-queries'.format(
     args.dataset, args.test_ways, args.test_shots, args.test_queries))
 print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):

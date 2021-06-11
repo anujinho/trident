@@ -19,7 +19,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device):
         train_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[:1100], num_tasks=20000)
         valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, n_ways=n_ways,
-                                k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=600)
+                                k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=200)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[1200:], num_tasks=600)
         learner = OmniCNN(output_size=n_ways, stride=(2, 2))
