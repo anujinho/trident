@@ -9,7 +9,7 @@ from torch import nn, optim
 
 from src.zoo.maml_utils import inner_adapt_maml, setup
 from src.utils import Profiler
-from src.config import maml_omniglot, maml_mini
+#from src.config import maml_omniglot, maml_mini
 
 ##############
 # Parameters #
@@ -28,6 +28,7 @@ parser.add_argument('--meta-batch-size', type=int)
 parser.add_argument('--iterations', type=int)
 parser.add_argument('--order', type=bool)
 parser.add_argument('--device', type=str)
+parser.add_argument('--download', type=str)
 
 args = parser.parse_args()
 

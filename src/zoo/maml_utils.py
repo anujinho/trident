@@ -9,7 +9,7 @@ from torchvision import transforms
 from src.zoo.archs import MiniImageCNN, OmniCNN
 
 
-def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device):
+def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download):
     if dataset == 'omniglot':
         image_trans = transforms.Compose([transforms.Resize(
             28, interpolation=LANCZOS), transforms.ToTensor(), lambda x: 1-x])
@@ -26,11 +26,11 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device):
 
     elif dataset == 'miniimagenet':
         # Generating tasks and model according to the MAML implementation for MiniImageNet
-        train_tasks = gen_tasks(dataset, root, mode='train',
+        train_tasks = gen_tasks(dataset, root, download=download, mode='train',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
-        valid_tasks = gen_tasks(dataset, root, mode='validation',
+        valid_tasks = gen_tasks(dataset, root, download=download, mode='validation',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
-        test_tasks = gen_tasks(dataset, root, mode='test',
+        test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = MiniImageCNN(output_size=n_ways, stride=(2, 2))
 
