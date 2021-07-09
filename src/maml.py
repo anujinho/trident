@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 loss = nn.CrossEntropyLoss(reduction='mean')
 if args.order == False:
