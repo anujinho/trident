@@ -26,11 +26,17 @@ parser.add_argument('--inner-lr', type=float)
 parser.add_argument('--meta-lr', type=float)
 parser.add_argument('--meta-batch-size', type=int)
 parser.add_argument('--iterations', type=int)
-parser.add_argument('--order', type=bool)
+parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
 
 args = parser.parse_args()
+if args.order == 'True': args.order = True
+elif args.order == 'False': args.order = False
+
+if args.download == 'True': args.download = True
+elif args.download == 'False': args.download = False
+
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner = setup(
