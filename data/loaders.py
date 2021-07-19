@@ -1,10 +1,20 @@
 import os
+import io
+import json
 import pickle
+import tarfile
+import shutil
+import zipfile
+import requests
+from PIL import Image
+from collections import defaultdict
 
-import learn2learn as l2l
 import numpy as np
+import scipy.io
 import torch
 import torchvision
+from torchvision.datasets import ImageFolder
+from torchvision.datasets.folder import default_loader
 from learn2learn.data.utils import (download_file,
                                     download_file_from_google_drive)
 from torch.utils.data import ConcatDataset, Dataset
@@ -67,15 +77,8 @@ def index_classes(items):
 class MiniImageNet(Dataset):
 
     """
-    [[Source]](https://github.com/learnables/learn2learn/blob/master/learn2learn/vision/datasets/mini_imagenet.py)
-    **Description**
-    The *mini*-ImageNet dataset was originally introduced by Vinyals et al., 2016.
-    It consists of 60'000 colour images of sizes 84x84 pixels.
+    Consists of 60'000 colour images of sizes 84x84 pixels.
     The dataset is divided in 3 splits of 64 training, 16 validation, and 20 testing classes each containing 600 examples.
-    The classes are sampled from the ImageNet dataset, and we use the splits from Ravi & Larochelle, 2017.
-    **References**
-    1. Vinyals et al. 2016. “Matching Networks for One Shot Learning.” NeurIPS.
-    2. Ravi and Larochelle. 2017. “Optimization as a Model for Few-Shot Learning.” ICLR.
     **Arguments**
     * **root** (str) - Path to download the data.
     * **mode** (str, *optional*, default='train') - Which split to use.
@@ -146,3 +149,603 @@ class MiniImageNet(Dataset):
 
     def _check_exists(self):
         return os.path.exists(os.path.join(self.root, 'mini-imagenet-cache-' + self.mode + '.pkl'))
+
+class CUBirds200(Dataset):
+
+    """
+    The dataset consists of 6,033 bird images classified into 200 bird species.
+    The train set consists of 140 classes, while the validation and test sets each contain 30.
+    This dataset includes 43 images that overlap with the ImageNet dataset.
+    # Arguments:
+    * **root** (str) - Path to download the data.
+    * **mode** (str, *optional*, default='train') - Which split to use.
+        Must be 'train', 'validation', or 'test'.
+    * **transform** (Transform, *optional*, default=None) - Input pre-processing.
+    * **target_transform** (Transform, *optional*, default=None) - Target pre-processing.
+    * **download** (bool, *optional*, default=False) - Whether to download the dataset.
+    * **include_imagenet_duplicates** (bool, *optional*, default=False) - Whether to include images that are also present in the ImageNet 2012 dataset.
+    
+    # Example:
+    train_dataset = CUBirds200(root='./data', mode='train')
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    train_generator = l2l.data.TaskDataset(dataset=train_dataset, num_tasks=1000)
+    """
+
+    def __init__(
+        self,
+        root,
+        mode='all',
+        transform=None,
+        target_transform=None,
+        download=False,
+        include_imagenet_duplicates=False,
+            ):
+        root = os.path.expanduser(root)
+        self.root = root
+        self.mode = mode
+        self.transform = transform
+        self.target_transform = target_transform
+        self.include_imagenet_duplicates = include_imagenet_duplicates
+        self._bookkeeping_path = os.path.join(
+            self.root,
+            'cubirds200-' + mode + '-bookkeeping.pkl'
+        )
+        self.DATA_DIR = 'cubirds200'
+        self.DATA_FILENAME = 'CUB_200_2011.tgz'
+        self.ARCHIVE_ID = '1hbzc_P1FuxMkcabkgn9ZKinBwW683j45'
+        with open('cub_meta-info.json') as file:
+            self.cub_data = json.load(file)
+            file.close()
+
+        if not self._check_exists() and download:
+            self.download()
+
+        self.load_data(mode)
+
+    def _check_exists(self):
+        data_path = os.path.join(self.root, self.DATA_DIR)
+        return os.path.exists(data_path)
+
+    def download(self):
+        # Download and extract the data
+        data_path = os.path.join(self.root, self.DATA_DIR)
+        os.makedirs(data_path, exist_ok=True)
+        tar_path = os.path.join(data_path, self.DATA_FILENAME)
+        print('Downloading CUBirds200 dataset. (1.1Gb)')
+        download_file_from_google_drive(self.ARCHIVE_ID, tar_path)
+        tar_file = tarfile.open(tar_path)
+        tar_file.extractall(data_path)
+        tar_file.close()
+        os.remove(tar_path)
+
+    def load_data(self, mode='train'):
+        classes = sum(self.cub_data['SPLITS'].values(), []) if mode == 'all' else self.cub_data['SPLITS'][mode]
+        images_path = os.path.join(
+            self.root,
+            self.DATA_DIR,
+            'CUB_200_2011',
+            'images',
+        )
+        duplicates = self.cub_data['IMAGENET_DUPLICATES'][self.mode]
+        self.data = []
+        for class_idx, class_name in enumerate(classes):
+            class_path = os.path.join(images_path, class_name)
+            filenames = os.listdir(class_path)
+            for image_file in filenames:
+                if self.include_imagenet_duplicates or \
+                   image_file not in duplicates:
+                    image_path = os.path.join(class_path, image_file)
+                    self.data.append((image_path, class_idx))
+
+    def __getitem__(self, i):
+        image_path, label = self.data[i]
+        image = default_loader(image_path)
+        if self.transform is not None:
+            image = self.transform(image)
+        if self.target_transform is not None:
+            label = self.target_transform(label)
+        return image, label
+
+    def __len__(self):
+        length = len(self.data)
+        return length
+
+class CIFARFS(ImageFolder):
+
+    """
+    Consists of 60'000 colour images of sizes 32x32 pixels.
+    The dataset is divided in 3 splits of 64 training, 16 validation, and 20 testing classes each containing 600 examples.
+    The classes are sampled from the CIFAR-100 dataset.
+    # Arguments: 
+    * **root** (str) - Path to download the data.
+    * **mode** (str, *optional*, default='train') - Which split to use.
+        Must be 'train', 'validation', or 'test'.
+    * **transform** (Transform, *optional*, default=None) - Input pre-processing.
+    * **target_transform** (Transform, *optional*, default=None) - Target pre-processing.
+    
+    # Example:
+    train_dataset = CIFARFS(root='./data', mode='train')
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    train_generator = l2l.data.TaskGenerator(dataset=train_dataset, ways=ways)
+    
+    """
+
+    def __init__(self,
+                 root,
+                 mode='train',
+                 transform=None,
+                 target_transform=None,
+                 download=False):
+        self.root = os.path.expanduser(root)
+        if not os.path.exists(self.root):
+            os.mkdir(self.root)
+        self.transform = transform
+        self.target_transform = target_transform
+        self.mode = mode
+        self.processed_root = os.path.join(self.root, 'cifarfs', 'processed')
+        self.raw_path = os.path.join(self.root, 'cifarfs')
+
+        if not self._check_exists() and download:
+            self._download()
+        if not self._check_processed():
+            self._process_zip()
+        mode = 'val' if mode == 'validation' else mode
+        self.processed_root = os.path.join(self.processed_root, mode)
+        self._bookkeeping_path = os.path.join(self.root, 'cifarfs-' + mode + '-bookkeeping.pkl')
+        super(CIFARFS, self).__init__(root=self.processed_root,
+                                      transform=self.transform,
+                                      target_transform=self.target_transform)
+
+    def _check_exists(self):
+        return os.path.exists(self.raw_path)
+
+    def _check_processed(self):
+        return os.path.exists(self.processed_root)
+
+    def _download(self):
+        # Download the zip, unzip it, and clean up
+        print('Downloading CIFARFS to ', self.root)
+        if not os.path.exists(self.root):
+            os.mkdir(self.root)
+        zip_file = os.path.join(self.root, 'cifarfs.zip')
+        download_file_from_google_drive('1pTsCCMDj45kzFYgrnO67BWVbKs48Q3NI',
+                                        zip_file)
+        with zipfile.ZipFile(zip_file, 'r') as zfile:
+            zfile.extractall(self.raw_path)
+        os.remove(zip_file)
+
+    def _process_zip(self):
+        print('Creating CIFARFS splits')
+        if not os.path.exists(self.processed_root):
+            os.mkdir(self.processed_root)
+        split_path = os.path.join(self.raw_path, 'cifar100', 'splits', 'bertinetto')
+        train_split_file = os.path.join(split_path, 'train.txt')
+        valid_split_file = os.path.join(split_path, 'val.txt')
+        test_split_file = os.path.join(split_path, 'test.txt')
+
+        source_dir = os.path.join(self.raw_path, 'cifar100', 'data')
+        for fname, dest in [(train_split_file, 'train'),
+                            (valid_split_file, 'val'),
+                            (test_split_file, 'test')]:
+            dest_target = os.path.join(self.processed_root, dest)
+            if not os.path.exists(dest_target):
+                os.mkdir(dest_target)
+            with open(fname) as split:
+                for label in split.readlines():
+                    source = os.path.join(source_dir, label.strip())
+                    target = os.path.join(dest_target, label.strip())
+                    shutil.copytree(source, target)
+
+
+class FGVCAircraft(Dataset):
+
+    """
+    The dataset consists of 10,200 images of aircraft (102 classes, each 100 images).
+    # Arguments:
+    * **root** (str) - Path to download the data.
+    * **mode** (str, *optional*, default='train') - Which split to use.
+        Must be 'train', 'validation', or 'test'.
+    * **transform** (Transform, *optional*, default=None) - Input pre-processing.
+    * **target_transform** (Transform, *optional*, default=None) - Target pre-processing.
+    * **download** (bool, *optional*, default=False) - Whether to download the dataset.
+    
+    # Example:
+    train_dataset = l2l.vision.datasets.FGVCAircraft(root='./data', mode='train', download=True)
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    train_generator = l2l.data.TaskDataset(dataset=train_dataset, num_tasks=1000)
+
+    """
+
+    def __init__(self, root, mode='all', transform=None, target_transform=None, download=False):
+        root = os.path.expanduser(root)
+        self.root = os.path.expanduser(root)
+        self.transform = transform
+        self.target_transform = target_transform
+        self._bookkeeping_path = os.path.join(self.root, 'fgvc-aircraft-' + mode + '-bookkeeping.pkl')
+        self.DATASET_DIR = 'fgvc_aircraft'
+        self.DATASET_URL = 'http://www.robots.ox.ac.uk/~vgg/data/fgvc-aircraft/archives/fgvc-aircraft-2013b.tar.gz'
+        self.DATA_DIR = os.path.join('fgvc-aircraft-2013b', 'data')
+        self.IMAGES_DIR = os.path.join(self.DATA_DIR, 'images')
+        self.LABELS_PATH = os.path.join(self.DATA_DIR, 'labels.pkl')
+        with open('aircraft_meta-info.json') as file:
+            aircraft_data = json.load(file)
+            file.close()
+        
+        if not self._check_exists() and download:
+            self.download()
+
+        assert mode in ['train', 'validation', 'test'], \
+            'mode should be one of train, validation, test.'
+        self.load_data(mode)
+
+    def _check_exists(self):
+        data_path = os.path.join(self.root, self.DATASET_DIR)
+        images_path = os.path.join(data_path, self.IMAGES_DIR)
+        labels_path = os.path.join(data_path, self.LABELS_PATH)
+        return os.path.exists(data_path) and \
+            os.path.exists(images_path) and \
+            os.path.exists(labels_path)
+
+    def download(self):
+        if not os.path.exists(self.root):
+            os.mkdir(self.root)
+        data_path = os.path.join(self.root, self.DATASET_DIR)
+        if not os.path.exists(data_path):
+            os.mkdir(data_path)
+        tar_path = os.path.join(data_path, os.path.basename(self.DATASET_URL))
+        if not os.path.exists(tar_path):
+            print('Downloading FGVC Aircraft dataset. (2.75Gb)')
+            req = requests.get(self.DATASET_URL)
+            with open(tar_path, 'wb') as archive:
+                for chunk in req.iter_content(chunk_size=32768):
+                    if chunk:
+                        archive.write(chunk)
+        with tarfile.open(tar_path) as tar_file:
+            tar_file.extractall(data_path)
+        family_names = ['images_family_train.txt',
+                        'images_family_val.txt',
+                        'images_family_test.txt']
+        images_labels = []
+        for family in family_names:
+            with open(os.path.join(data_path, self.DATA_DIR, family_names[0]), 'r') as family_file:
+                for line in family_file.readlines():
+                    image, label = line.split(' ', 1)
+                    images_labels.append((image.strip(), label.strip()))
+        labels_path = os.path.join(data_path, self.LABELS_PATH)
+        with open(labels_path, 'wb') as labels_file:
+            pickle.dump(images_labels, labels_file)
+        os.remove(tar_path)
+
+    def load_data(self, mode='train'):
+        data_path = os.path.join(self.root, self.DATASET_DIR)
+        labels_path = os.path.join(data_path, self.LABELS_PATH)
+        with open(labels_path, 'rb') as labels_file:
+            image_labels = pickle.load(labels_file)
+
+        data = []
+        mode = 'valid' if mode == 'validation' else mode
+        split = self.aircraft_data['SPLITS'][mode]
+        for image, label in image_labels:
+            if label in split:
+                image = os.path.join(data_path, self.IMAGES_DIR, image + '.jpg')
+                label = split.index(label)
+                data.append((image, label))
+        self.data = data
+
+    def __getitem__(self, i):
+        image, label = self.data[i]
+        image = Image.open(image)
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image, label
+
+    def __len__(self):
+        return len(self.data)
+
+
+class FGVCFungi(Dataset):
+
+    """
+    The dataset consists of 1,394 classes and 89,760 images of fungi.
+    # Arguments:
+    * **root** (str) - Path to download the data.
+    * **mode** (str, *optional*, default='train') - Which split to use.
+        Must be 'train', 'validation', or 'test'.
+    * **transform** (Transform, *optional*, default=None) - Input pre-processing.
+    * **target_transform** (Transform, *optional*, default=None) - Target pre-processing.
+    * **download** (bool, *optional*, default=False) - Whether to download the dataset.
+    
+    # Example:
+    train_dataset = l2l.vision.datasets.FGVCFungi(root='./data', mode='train')
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    train_generator = l2l.data.TaskDataset(dataset=train_dataset, num_tasks=1000)
+
+    """
+
+    def __init__(self, root, mode='all', transform=None, target_transform=None, download=False):
+        root = os.path.expanduser(root)
+        self.root = os.path.expanduser(root)
+        self.transform = transform
+        self.target_transform = target_transform
+        self._bookkeeping_path = os.path.join(self.root, 'fgvc-fungi-' + mode + '-bookkeeping.pkl')
+        self.DATA_DIR = 'fgvc_fungi'
+        self.DATA_URL = 'https://labs.gbif.org/fgvcx/2018/fungi_train_val.tgz'
+        self.ANNOTATIONS_URL = 'https://labs.gbif.org/fgvcx/2018/train_val_annotations.tgz'
+        with open('fungi_meta-info.json') as file:
+            fungi_data = json.load(file)
+            file.close()
+
+        if not self._check_exists() and download:
+            self.download()
+
+        self.load_data(mode)
+
+    def _check_exists(self):
+        data_path = os.path.join(self.root, self.DATA_DIR, 'images')
+        annotations_path = os.path.join(self.root, self.DATA_DIR, 'train.json')
+        return os.path.exists(data_path)
+
+    def download(self):
+        data_path = os.path.join(self.root, self.DATA_DIR)
+        os.makedirs(data_path, exist_ok=True)
+        data_tar_path = os.path.join(data_path, os.path.basename(self.DATA_URL))
+        annotations_tar_path = os.path.join(data_path, os.path.basename(self.ANNOTATIONS_URL))
+
+        # Download data
+        print('Downloading FGVC Fungi dataset (12.9Gb)')
+        download_file(self.DATA_URL, data_tar_path, size=12_900_000_000)
+        download_file(self.ANNOTATIONS_URL, annotations_tar_path)
+
+        # Extract data
+        tar_file = tarfile.open(data_tar_path)
+        tar_file.extractall(data_path)
+        tar_file.close()
+        os.remove(data_tar_path)
+
+        # Extract annotations
+        tar_file = tarfile.open(annotations_tar_path)
+        tar_file.extractall(data_path)
+        tar_file.close()
+        os.remove(annotations_tar_path)
+
+    def load_data(self, mode='train'):
+        if not os.path.exists(self._bookkeeping_path):
+            # Load annotations
+            data_path = os.path.join(self.root, self.DATA_DIR)
+            train_path = os.path.join(data_path, 'train.json')
+            with open(train_path, 'r') as f_train:
+                train_annotations = json.load(f_train)
+            valid_path = os.path.join(data_path, 'val.json')
+            with open(valid_path, 'r') as f_valid:
+                valid_annotations = json.load(f_valid)
+            split_classes = sum(self.fungi_data['SPLITS'].values(), []) if mode == 'all' else self.fungi_data['SPLITS'][mode]
+            split_classes = [int(cls[:4]) for cls in split_classes]
+
+            # Create bookkeeping
+            labels_to_indices = defaultdict(list)
+            indices_to_labels = defaultdict(int)
+            data_map = []
+
+            # Process
+            all_images = train_annotations['images'] + valid_annotations['images']
+            all_annotations = train_annotations['annotations'] \
+                + valid_annotations['annotations']
+            counter = 0
+            for image, annotation in zip(all_images, all_annotations):
+                assert image['id'] == annotation['image_id']
+                img_cat = annotation['category_id']
+                if img_cat in split_classes:
+                    img_path = os.path.join(data_path, image['file_name'])
+                    label = split_classes.index(img_cat)
+                    data_map.append((img_path, label))
+                    labels_to_indices[label].append(counter)
+                    indices_to_labels[counter] = label
+                    counter += 1
+
+            # Cache to disk
+            bookkeeping = {
+                'labels_to_indices': labels_to_indices,
+                'indices_to_labels': indices_to_labels,
+                'labels': list(labels_to_indices.keys()),
+                'data_map': data_map,
+            }
+            with open(self._bookkeeping_path, 'wb') as f:
+                pickle.dump(bookkeeping, f, protocol=-1)
+        else:
+            # Load bookkeeping
+            with open(self._bookkeeping_path, 'rb') as f:
+                bookkeeping = pickle.load(f)
+
+        self._bookkeeping = bookkeeping
+        self.labels_to_indices = bookkeeping['labels_to_indices']
+        self.indices_to_labels = bookkeeping['indices_to_labels']
+        self.labels = bookkeeping['labels']
+        self.data_map = bookkeeping['data_map']
+        self.length = len(self.indices_to_labels)
+
+    def __getitem__(self, i):
+        image, label = self.data_map[i]
+        image = Image.open(image)
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image, label
+
+    def __len__(self):
+        return self.length
+
+class TieredImagenet(Dataset):
+    
+    """
+    Like *mini*-ImageNet, *tiered*-ImageNet builds on top of ILSVRC-12, but consists of 608 classes (779,165 images) instead of 100.
+    The train-validation-test split is made such that classes from similar categories are in the same splits.
+    There are 34 categories each containing between 10 and 30 classes.
+    Of these categories, 20 (351 classes; 448,695 images) are used for training,
+    6 (97 classes; 124,261 images) for validation, and 8 (160 class; 206,209 images) for testing.
+    # Arguments:
+    * **root** (str) - Path to download the data.
+    * **mode** (str, *optional*, default='train') - Which split to use.
+        Must be 'train', 'validation', or 'test'.
+    * **transform** (Transform, *optional*, default=None) - Input pre-processing.
+    * **target_transform** (Transform, *optional*, default=None) - Target pre-processing.
+    * **download** (bool, *optional*, default=False) - Whether to download the dataset.
+    
+    # Example:
+    train_dataset = l2l.vision.datasets.TieredImagenet(root='./data', mode='train', download=True)
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    train_generator = l2l.data.TaskDataset(dataset=train_dataset, num_tasks=1000)
+    
+    """
+
+    def __init__(self, root, mode='train', transform=None, target_transform=None, download=False):
+        super(TieredImagenet, self).__init__()
+        self.root = os.path.expanduser(root)
+        if not os.path.exists(self.root):
+            os.mkdir(self.root)
+        self.transform = transform
+        self.target_transform = target_transform
+        if mode not in ['train', 'validation', 'test']:
+            raise ValueError('mode must be train, validation, or test.')
+        self.mode = mode
+        self._bookkeeping_path = os.path.join(self.root, 'tiered-imagenet-bookkeeping-' + mode + '.pkl')
+        google_drive_file_id = '1g1aIDy2Ar_MViF2gDXFYDBTR-HYecV07'
+
+        if not self._check_exists() and download:
+            self.download(google_drive_file_id, self.root)
+
+        short_mode = 'val' if mode == 'validation' else mode
+        tiered_imaganet_path = os.path.join(self.root, 'tiered-imagenet')
+        images_path = os.path.join(tiered_imaganet_path, short_mode + '_images_png.pkl')
+        with open(images_path, 'rb') as images_file:
+            self.images = pickle.load(images_file)
+        labels_path = os.path.join(tiered_imaganet_path, short_mode + '_labels.pkl')
+        with open(labels_path, 'rb') as labels_file:
+            self.labels = pickle.load(labels_file)
+            self.labels = self.labels['label_specific']
+
+    def download(self, file_id, destination):
+        archive_path = os.path.join(destination, 'tiered_imagenet.tar')
+        print('Downloading tiered ImageNet. (12Gb) Please be patient.')
+        download_file_from_google_drive(file_id, archive_path)
+        archive_file = tarfile.open(archive_path)
+        archive_file.extractall(destination)
+        os.remove(archive_path)
+
+    def __getitem__(self, idx):
+        image = Image.open(io.BytesIO(self.images[idx]))
+        label = self.labels[idx]
+        if self.transform is not None:
+            image = self.transform(image)
+        if self.target_transform is not None:
+            label = self.target_transform(label)
+        return image, label
+
+    def __len__(self):
+        return len(self.labels)
+
+    def _check_exists(self):
+        return os.path.exists(os.path.join(self.root,
+                                           'tiered-imagenet',
+                                           'train_images_png.pkl'))
+
+
+class VGGFlower102(Dataset):
+
+    """
+    The dataset consists of 102 classes of flowers, with each class consisting of 40 to 258 images.
+    # Arguments:
+    * **root** (str) - Path to download the data.
+    * **mode** (str, *optional*, default='train') - Which split to use.
+        Must be 'train', 'validation', or 'test'.
+    * **transform** (Transform, *optional*, default=None) - Input pre-processing.
+    * **target_transform** (Transform, *optional*, default=None) - Target pre-processing.
+    * **download** (bool, *optional*, default=False) - Whether to download the dataset.
+    
+    # Example:
+    train_dataset = l2l.vision.datasets.VGGFlower102(root='./data', mode='train')
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    train_generator = l2l.data.TaskDataset(dataset=train_dataset, num_tasks=1000)
+    
+    """
+
+    def __init__(self, root, mode='all', transform=None, target_transform=None, download=False):
+        root = os.path.expanduser(root)
+        self.root = os.path.expanduser(root)
+        self.transform = transform
+        self.target_transform = target_transform
+        self._bookkeeping_path = os.path.join(self.root, 'vgg-flower102-' + mode + '-bookkeeping.pkl')
+        self.DATA_DIR = 'vgg_flower102'
+        self.IMAGES_URL = 'http://www.robots.ox.ac.uk/~vgg/data/flowers/102/102flowers.tgz'
+        self.LABELS_URL = 'http://www.robots.ox.ac.uk/~vgg/data/flowers/102/imagelabels.mat'
+        self.IMAGES_DIR = 'jpg'
+        self.LABELS_PATH = 'imagelabels.mat'
+
+        self.SPLITS = {
+    'train': [90, 38, 80, 30, 29, 12, 43, 27, 4, 64, 31, 99, 8, 67, 95, 77,
+              78, 61, 88, 74, 55, 32, 21, 13, 79, 70, 51, 69, 14, 60, 11, 39,
+              63, 37, 36, 28, 48, 7, 93, 2, 18, 24, 6, 3, 44, 76, 75, 72, 52,
+              84, 73, 34, 54, 66, 59, 50, 91, 68, 100, 71, 81, 101, 92, 22,
+              33, 87, 1, 49, 20, 25, 58],
+    'validation': [10, 16, 17, 23, 26, 47, 53, 56, 57, 62, 82, 83, 86, 97, 102],
+    'test': [5, 9, 15, 19, 35, 40, 41, 42, 45, 46, 65, 85, 89, 94, 96, 98],
+    'all': list(range(1, 103)),
+}
+
+        if not self._check_exists() and download:
+            self.download()
+
+        self.load_data(mode)
+
+    def _check_exists(self):
+        data_path = os.path.join(self.root, self.DATA_DIR)
+        return os.path.exists(data_path)
+
+    def download(self):
+        if not os.path.exists(self.root):
+            os.mkdir(self.root)
+        data_path = os.path.join(self.root, self.DATA_DIR)
+        if not os.path.exists(data_path):
+            os.mkdir(data_path)
+        tar_path = os.path.join(data_path, os.path.basename(self.IMAGES_URL))
+        print('Downloading VGG Flower102 dataset (330Mb)')
+        download_file(self.IMAGES_URL, tar_path)
+        tar_file = tarfile.open(tar_path)
+        tar_file.extractall(data_path)
+        tar_file.close()
+        os.remove(tar_path)
+
+        label_path = os.path.join(data_path, os.path.basename(self.LABELS_URL))
+        req = requests.get(self.LABELS_URL)
+        with open(label_path, 'wb') as label_file:
+            label_file.write(req.content)
+
+    def load_data(self, mode='train'):
+        data_path = os.path.join(self.root, self.DATA_DIR)
+        images_path = os.path.join(data_path, self.IMAGES_DIR)
+        labels_path = os.path.join(data_path, self.LABELS_PATH)
+        labels_mat = scipy.io.loadmat(labels_path)
+        image_labels = []
+        split = self.SPLITS[mode]
+        for idx, label in enumerate(labels_mat['labels'][0], start=1):
+            if label in split:
+                image = str(idx).zfill(5)
+                image = f'image_{image}.jpg'
+                image = os.path.join(images_path, image)
+                label = split.index(label)
+                image_labels.append((image, label))
+        self.data = image_labels
+
+    def __getitem__(self, i):
+        image, label = self.data[i]
+        image = Image.open(image)
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image, label
+
+    def __len__(self):
+        return len(self.data)
