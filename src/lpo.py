@@ -37,6 +37,7 @@ args = parser.parse_args()
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, 64, args.device)
+learner_temp, learner_ttemp = learner
 opt = optim.Adam(learner.parameters(), args.lr)
 loss = nn.BCELoss(reduction='none')
 # lr_scheduler = torch.optim.lr_scheduler.StepLR(
@@ -75,7 +76,8 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     #learner.eval()
     for i, vtask in enumerate(valid_tasks):
 
-        learner_temp = copy.deepcopy(learner.state_dict())
+        learner_temp_state = copy.deepcopy(learner.state_dict())
+        learner_temp.load_state_dict(learner_temp_state)
         opt_temp = optim.Adam(learner_temp.parameters(), args.lr)
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
             vtask, args.n_ways, args.k_shots, args.q_shots, args.device)
@@ -112,6 +114,7 @@ print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):
 
     learner_ttemp = copy.deepcopy(learner.state_dict())
+    learner_ttemp.load_state_dict(learner_ttemp)
     opt_ttemp = optim.Adam(learner_ttemp.parameters(), args.lr)
     opt_ttemp.zero_grad()
     meta_test_acc = []
