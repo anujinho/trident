@@ -4,11 +4,11 @@ import numpy as np
 from numpy.core.numeric import ones_like
 import torch
 from torch.nn import functional as F
-from torch.nn.modules.loss import CrossEntropyLoss, KLDivLoss
+#from torch.nn.modules.loss import CrossEntropyLoss, KLDivLoss
 from data.taskers import gen_tasks
 from PIL.Image import LANCZOS
 from torchvision import transforms
-from torch.distributions.multivariate_normal import MultivariateNormal
+#from torch.distributions.multivariate_normal import MultivariateNormal
 
 from src.zoo.archs import CVAE
 
@@ -130,17 +130,17 @@ def inner_adapt_lpo(support, y_support, qs, y_queries, learner, reconstruction_l
     # adding up the losses
     ce_loss = torch.nn.CrossEntropyLoss(reduction='none')
 
-    L_support = -reconstruction_loss(support_cap, support/256).view(support.shape[0], -1).mean(dim=1) - ce_loss(
+    L_support = -reconstruction_loss(support_cap, support).view(support.shape[0], -1).mean(dim=1) - ce_loss(
         F.softmax(torch.ones_like(y_support).float(), dim=1), torch.argmax(y_support, dim=1)) - kl_div(support_mu, support_log_var)  # = -L(x_s, y_s)
 
-    L_queries = -reconstruction_loss(queries_cap, qs/256).view(qs.shape[0], -1).mean(dim=1) - ce_loss(
+    L_queries = -reconstruction_loss(queries_cap, qs).view(qs.shape[0], -1).mean(dim=1) - ce_loss(
         F.softmax(torch.ones_like(y_queries).float(), dim=1), torch.argmax(y_queries, dim=1)) - kl_div(queries_mu, queries_log_var)  # = -L(x_q, y_q)
 
     U_queries = torch.mm(F.softmax(queries_logits, dim=1)[
                          ::5, ], L_queries.view(n_ways*q_shots, n_ways).t()).diag() - torch.sum(torch.mul(F.softmax(queries_logits, dim=1)[
                              ::5, ], torch.log(F.softmax(queries_logits, dim=1)[
                                  ::5, ])), dim=1)
-    alpha = 0.1*(q_shots/k_shots)
+    alpha = 0.5*(q_shots/k_shots)
     J_alpha = -L_support.mean() - U_queries.mean() + alpha * \
         ce_loss(support_logits, torch.argmax(y_support, dim=1)).mean()
     J_alpha = J_alpha.mean()
