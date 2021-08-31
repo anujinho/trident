@@ -42,7 +42,8 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
 #     valid_loader = DataLoader(valid_tasks, pin_memory=True, shuffle=True)
 #     test_loader = DataLoader(test_tasks, pin_memory=True, shuffle=True)
 
-    learner = CVAE(in_channels=channels, y_shape=n_ways, base_channels=32, latent_dim=64)
+    learner = CVAE(in_channels=channels, y_shape=n_ways,
+                   base_channels=32, latent_dim=64)
     learner = learner.to(device)
 
     return train_tasks, valid_tasks, test_tasks, learner, learner, learner
@@ -51,6 +52,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
 def accuracy(predictions, targets):
     predictions = predictions.argmax(dim=1).view(targets.shape)
     return (predictions == targets).sum().float() / targets.size(0)
+
 
 def proto_distr(mus, log_vars, n, k, type):
     if type == 'average':
@@ -62,13 +64,16 @@ def proto_distr(mus, log_vars, n, k, type):
 
     return mu_p, var_p
 
+
 def classify(mu_p, var_p, mu_datums):
     a = mu_datums.shape[0]
     b = mu_p.shape[0]
 
-    logits = MultivariateNormal(mu_p, torch.diag_embed(var_p)).log_prob(
-        mu_datums.unsqueeze(1).expand(a, b, -1))
-    return logits
+    # logits = MultivariateNormal(mu_p, torch.diag_embed(var_p)).log_prob(
+    #     mu_datums.unsqueeze(1).expand(a, b, -1))
+    logits = - 0.5 * np.log(2 * np.pi) - torch.log(var_p).unsqueeze(0).expand(a, b, -1) / 2 - (mu_datums.unsqueeze(1).expand(
+        a, b, -1) - mu_p.unsqueeze(0).expand(a, b, -1))**2 / (2 * var_p.unsqueeze(0).expand(a, b, -1))
+    return torch.sum(logits, dim=-1)
 
 
 def kl_div(mus, log_vars):
@@ -104,11 +109,12 @@ def set_sets(task, n_ways, k_shots, q_shots, device):
 
     return support, y_support.to(device), queries, qs, y_queries.to(device), queries_labels
 
+
 def inner_adapt_lpo(support, y_support, qs, y_queries, learner, reconstruction_loss, n_ways, k_shots, q_shots):
     """ Performing Inference by minimizing (data, label) -log-likelihood over support images and (data) -log-likelihood over query images """
     # Forward pass on the Support datums
     support_cap, support_mu, support_log_var = learner(support, y_support)
-    
+
     # Building Prototypical distributions
     proto_mu, proto_var = proto_distr(
         support_mu, support_log_var, n_ways, k_shots, 'average')
@@ -135,7 +141,8 @@ def inner_adapt_lpo(support, y_support, qs, y_queries, learner, reconstruction_l
                              ::5, ], torch.log(F.softmax(queries_logits, dim=1)[
                                  ::5, ])), dim=1)
     alpha = 0.1*(q_shots/k_shots)
-    J_alpha = -L_support.mean() -U_queries.mean() + alpha*ce_loss(support_logits, torch.argmax(y_support, dim=1)).mean()
+    J_alpha = -L_support.mean() - U_queries.mean() + alpha * \
+        ce_loss(support_logits, torch.argmax(y_support, dim=1)).mean()
     J_alpha = J_alpha.mean()
-    
+
     return J_alpha, F.softmax(queries_logits, dim=1)
