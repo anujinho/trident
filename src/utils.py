@@ -16,4 +16,5 @@ class Profiler():
             # Add contents of list as last row in the csv file
             csv_writer.writerow(row)
 
+# /home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/
 ##/home/anuj/Desktop/Work/TU_Delft/research/implement/learning_to_meta-learn/logs

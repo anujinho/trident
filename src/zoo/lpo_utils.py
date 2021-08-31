@@ -45,7 +45,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
     learner = CVAE(in_channels=channels, y_shape=n_ways, base_channels=32, latent_dim=64)
     learner = learner.to(device)
 
-    return train_tasks, valid_tasks, test_tasks, learner
+    return train_tasks, valid_tasks, test_tasks, learner, learner, learner
 
 
 def accuracy(predictions, targets):

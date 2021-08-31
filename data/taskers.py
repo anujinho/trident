@@ -3,7 +3,7 @@ import learn2learn as l2l
 from data.loaders import MiniImageNet, Omniglotmix
 
 
-def gen_tasks(dataname, root, image_transforms=None, target_transforms=None, download=True, **task_transforms):
+def gen_tasks(dataname, root, image_transforms=None, target_transforms=None, download=False, **task_transforms):
     """ Generates tasks from the specified Dataset
     Arguments:- 
       root: root folder of Omniglot dataset
