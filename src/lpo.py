@@ -39,7 +39,7 @@ train_tasks, valid_tasks, test_tasks, learner, learner_temp, learner_ttemp = set
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, 64, args.device)
 #learner_temp, learner_ttemp = learner
 opt = optim.Adam(learner.parameters(), args.lr)
-loss = nn.MSELoss(reduction='none')
+loss = nn.BCELoss(reduction='none')
 # lr_scheduler = torch.optim.lr_scheduler.StepLR(
 #     opt, step_size=20, gamma=0.5)
 profiler = Profiler('LPO_{}_{}-way_{}-shot_{}-queries'.format(
@@ -55,13 +55,13 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     learner.train()
 
     for batch in range(args.meta_batch_size):
-        opt.zero_grad()
         ttask = train_tasks.sample()
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
             ttask, args.n_ways, args.k_shots, args.q_shots, args.device)
 
         # Running inner adaptation loop
         for i in range(args.inner_iters):
+            opt.zero_grad()
             evaluation_loss, query_preds = inner_adapt_lpo(
                 support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots)
             evaluation_loss.backward()
@@ -82,9 +82,9 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
             vtask, args.n_ways, args.k_shots, args.q_shots, args.device)
 
-        opt_temp.zero_grad()
         # Running inner adaptation loop
         for i in range(args.inner_iters):
+            opt_temp.zero_grad()
             validation_loss, query_preds = inner_adapt_lpo(
                 support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots)
             validation_loss.backward

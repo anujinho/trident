@@ -1,0 +1,25 @@
+HYPERPARAMETERS:
+
+- Arch:
+## 1. layers
+2. kernels
+3. max-pool 0/1
+## 4. activations
+~ 5. Z dim 
+
+- Loss:
+1. alpha = 0.1 * (q_shots/k_shots) coefficient of support cross-entropy
+2. beta = coefficient of KL-Div. regulates the importance of reconstruction
+3. 
+
+- Optim:
+1. lr
+2. lr annealing
+3. inner adapt steps
+
+
+IMPLEMENTATION:
+
+- Pre-trained ResNet / WRN to give embeddings instead of images in episodes
+- Pre-trained task-specific embeddings instead of images in episodes 
+- meta learn the damn thing with heirarchical bayes

@@ -357,7 +357,7 @@ class CDecoder(nn.Module):
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             act_fn(),
             nn.ConvTranspose2d(c_hid, num_input_channels, kernel_size=3, output_padding=1, padding=1, stride=2), # 16x16 => 32x32
-            #nn.Sigmoid() # The input image is scaled between 0 and 1, hence the output has to be bounded as well
+            nn.Sigmoid() # The input image is scaled between 0 and 1, hence the output has to be bounded as well
         )
 
     def forward(self, x):
