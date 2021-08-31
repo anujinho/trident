@@ -67,9 +67,9 @@ for iteration in tqdm.tqdm(range(args.iterations)):
             evaluation_loss.backward()
             opt.step()
 
-        meta_train_loss.append(evaluation_loss)
+        meta_train_loss.append(evaluation_loss.item())
         evaluation_accuracy = accuracy(query_preds[::args.n_ways,], queries_labels)  # fig this
-        meta_train_acc.append(evaluation_accuracy)
+        meta_train_acc.append(evaluation_accuracy.item())
         
     # lr_scheduler.step()
 
