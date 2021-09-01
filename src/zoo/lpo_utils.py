@@ -50,7 +50,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
         learner = learner.to(device)
 
         embedder = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=64, remove_linear=True)
-        checkpoint = torch.load('/home/anuj/Desktop/Work/TU_Delft/research/implement/results/mini/softmax/resnet18/checkpoint.pth.tar')
+        checkpoint = torch.load('/home/nfs/anujsingh/meta_lrng/files/checkpoint.pth.tar')
         model_dict = embedder.state_dict()
         params = checkpoint['state_dict']
         params = {k: v for k, v in params.items() if k in model_dict}
