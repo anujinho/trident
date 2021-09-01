@@ -36,7 +36,7 @@ args = parser.parse_args()
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner, learner_temp, learner_ttemp, embedder = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, 64, args.device)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, args.device)
 #learner_temp, learner_ttemp = learner
 opt = optim.Adam(learner.parameters(), args.lr)
 loss = nn.BCELoss(reduction='none')
