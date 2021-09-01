@@ -60,7 +60,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
         for p in embedder.parameters():
             p.requires_grad = False
 
-    return train_tasks, valid_tasks, test_tasks, learner, learner, learner, embedder
+    return train_tasks, valid_tasks, test_tasks, learner, learner, embedder
 
 
 def accuracy(predictions, targets):

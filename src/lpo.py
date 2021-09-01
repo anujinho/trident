@@ -35,10 +35,10 @@ args = parser.parse_args()
 
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
-train_tasks, valid_tasks, test_tasks, learner, learner_temp, learner_ttemp, embedder = setup(
+train_tasks, valid_tasks, test_tasks, learner, learner_temp, embedder = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, args.device)
 #learner_temp, learner_ttemp = learner
-opt = optim.Adam(learner.parameters(), args.lr)
+#opt = optim.Adam(learner.parameters(), args.lr)
 loss = nn.MSELoss(reduction='none')
 # lr_scheduler = torch.optim.lr_scheduler.StepLR(
 #     opt, step_size=20, gamma=0.5)
@@ -55,6 +55,11 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     learner.train()
 
     for batch in range(args.meta_batch_size):
+
+        learner_temp_state = copy.deepcopy(learner.state_dict())
+        learner_temp.load_state_dict(learner_temp_state)
+        opt = optim.Adam(learner_temp.parameters(), args.lr)
+        
         ttask = train_tasks.sample()
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
             ttask, args.n_ways, args.k_shots, args.q_shots, embedder, args.device)
@@ -63,7 +68,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         for i in range(args.inner_iters):
             opt.zero_grad()
             evaluation_loss, query_preds = inner_adapt_lpo(
-                support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots)
+                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots)
             evaluation_loss.backward()
             opt.step()
 
@@ -79,6 +84,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         learner_temp_state = copy.deepcopy(learner.state_dict())
         learner_temp.load_state_dict(learner_temp_state)
         opt_temp = optim.Adam(learner_temp.parameters(), args.lr)
+
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
             vtask, args.n_ways, args.k_shots, args.q_shots, embedder, args.device)
 
@@ -113,10 +119,10 @@ prof_test = Profiler('ProNets_test_{}_{}-way_{}-shot_{}-queries'.format(
 print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):
 
-    learner_ttemp = copy.deepcopy(learner.state_dict())
-    learner_ttemp.load_state_dict(learner_ttemp)
-    opt_ttemp = optim.Adam(learner_ttemp.parameters(), args.lr)
-    opt_ttemp.zero_grad()
+    learner_temp = copy.deepcopy(learner.state_dict())
+    learner_temp.load_state_dict(learner_temp)
+    opt_temp = optim.Adam(learner_temp.parameters(), args.lr)
+    opt_temp.zero_grad()
     meta_test_acc = []
     meta_test_loss = []
 
@@ -125,10 +131,11 @@ for i, tetask in enumerate(test_tasks):
 
     # Running inner adaptation loop
     for i in range(args.inner_iters):
+        opt_temp.zero_grad()
         test_loss, query_preds = inner_adapt_lpo(
             support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots)
         test_loss.backward
-        opt_ttemp.step()
+        opt_temp.step()
 
     meta_test_loss.append(test_loss.item())
     test_accuracy = accuracy(query_preds[::args.n_ways,], queries_labels)
