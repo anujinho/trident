@@ -39,7 +39,7 @@ train_tasks, valid_tasks, test_tasks, learner, learner_temp, learner_ttemp, embe
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, args.device)
 #learner_temp, learner_ttemp = learner
 opt = optim.Adam(learner.parameters(), args.lr)
-loss = nn.BCELoss(reduction='none')
+loss = nn.MSELoss(reduction='none')
 # lr_scheduler = torch.optim.lr_scheduler.StepLR(
 #     opt, step_size=20, gamma=0.5)
 profiler = Profiler('LPO_{}_{}-way_{}-shot_{}-queries'.format(
