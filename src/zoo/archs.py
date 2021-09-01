@@ -397,7 +397,7 @@ class LEncoder(nn.Module):
     def __init__(self,
                  input_dims : int,
                  latent_dim : int,
-                 act_fn : object = nn.GELU):
+                 act_fn : object = nn.ReLU):
         """
         Inputs:
             - input_dims : Number of input dimensions of the image-embedding
@@ -424,7 +424,7 @@ class LDecoder(nn.Module):
     def __init__(self,
                  input_dims : int,
                  latent_dim : int,
-                 act_fn : object = nn.GELU):
+                 act_fn : object = nn.LeakyReLU):
         """
         Inputs:
             - input_dims : Number of input dimensions of the image-embedding to be reconstructed
