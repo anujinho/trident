@@ -35,7 +35,7 @@ args = parser.parse_args()
 
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
-train_tasks, valid_tasks, test_tasks, learner, learner_temp, learner_ttemp = setup(
+train_tasks, valid_tasks, test_tasks, learner, learner_temp, learner_ttemp, embedder = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, 64, args.device)
 #learner_temp, learner_ttemp = learner
 opt = optim.Adam(learner.parameters(), args.lr)
@@ -57,7 +57,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
-            ttask, args.n_ways, args.k_shots, args.q_shots, args.device)
+            ttask, args.n_ways, args.k_shots, args.q_shots, embedder, args.device)
 
         # Running inner adaptation loop
         for i in range(args.inner_iters):
@@ -80,7 +80,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         learner_temp.load_state_dict(learner_temp_state)
         opt_temp = optim.Adam(learner_temp.parameters(), args.lr)
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
-            vtask, args.n_ways, args.k_shots, args.q_shots, args.device)
+            vtask, args.n_ways, args.k_shots, args.q_shots, embedder, args.device)
 
         # Running inner adaptation loop
         for i in range(args.inner_iters):
@@ -121,7 +121,7 @@ for i, tetask in enumerate(test_tasks):
     meta_test_loss = []
 
     support, y_support, queries, qs, y_queries, queries_labels = set_sets(
-            vtask, args.n_ways, args.k_shots, args.q_shots, args.device)
+            vtask, args.n_ways, args.k_shots, args.q_shots, embedder, args.device)
 
     # Running inner adaptation loop
     for i in range(args.inner_iters):

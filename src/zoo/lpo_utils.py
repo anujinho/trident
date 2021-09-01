@@ -10,10 +10,10 @@ from PIL.Image import LANCZOS
 from torchvision import transforms
 #from torch.distributions.multivariate_normal import MultivariateNormal
 
-from src.zoo.archs import CVAE
+from src.zoo.archs import CVAE, LVAE, ResNet, BasicBlock
 
 
-def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_queries, latent_dim, device):
+def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_queries, device):
     if dataset == 'omniglot':
         channels = 1
         image_trans = transforms.Compose([transforms.Resize(
@@ -42,11 +42,25 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
 #     valid_loader = DataLoader(valid_tasks, pin_memory=True, shuffle=True)
 #     test_loader = DataLoader(test_tasks, pin_memory=True, shuffle=True)
 
-    learner = CVAE(in_channels=channels, y_shape=n_ways,
-                   base_channels=32, latent_dim=64)
-    learner = learner.to(device)
 
-    return train_tasks, valid_tasks, test_tasks, learner, learner, learner
+        learner = CVAE(in_channels=channels, y_shape=n_ways,
+                    base_channels=32, latent_dim=64)
+        learner = learner.to(device)
+        learner = LVAE(in_dims=512, y_shape=n_ways, latent_dim=64)
+        learner = learner.to(device)
+
+        embedder = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=64, remove_linear=True)
+        checkpoint = torch.load('/home/anuj/Desktop/Work/TU_Delft/research/implement/results/mini/softmax/resnet18/checkpoint.pth.tar')
+        model_dict = embedder.state_dict()
+        params = checkpoint['state_dict']
+        params = {k: v for k, v in params.items() if k in model_dict}
+        model_dict.update(params)
+        embedder.load_state_dict(model_dict)
+        embedder.to(device)
+        for p in embedder.parameters():
+            p.requires_grad = False
+
+    return train_tasks, valid_tasks, test_tasks, learner, learner, learner, embedder
 
 
 def accuracy(predictions, targets):
@@ -80,7 +94,7 @@ def kl_div(mus, log_vars):
     return - 0.5 * (1 + log_vars - mus**2 - torch.exp(log_vars)).sum(dim=1)
 
 
-def set_sets(task, n_ways, k_shots, q_shots, device):
+def set_sets(task, n_ways, k_shots, q_shots, embedder, device):
     """ Creating support and reshaped query sets """
 
     data, labels = task
@@ -106,6 +120,8 @@ def set_sets(task, n_ways, k_shots, q_shots, device):
     y_queries = y_queries.repeat(n_ways*q_shots)
     y_queries = F.one_hot(y_queries, num_classes=n_ways)
     qs = queries.repeat_interleave(n_ways, dim=0)
+
+    support, qs = embedder(support), embedder(qs)
 
     return support, y_support.to(device), queries, qs, y_queries.to(device), queries_labels
 
