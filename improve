@@ -4,7 +4,7 @@ HYPERPARAMETERS:
 ## 1. layers
 2. kernels
 3. max-pool 0/1
-## 4. activations
+## 4. activations (1. GELU 2. Enc: ReLU, Dec: LeakyReLU)
 ~ 5. Z dim 
 
 - Loss:
