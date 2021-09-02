@@ -28,7 +28,7 @@ parser.add_argument('--lr', type=float)
 parser.add_argument('--meta-batch-size', type=int)
 parser.add_argument('--iterations', type=int)
 parser.add_argument('--inner-iters', type=int)
-parser.add_argument('--alpha_dec', type=float)
+parser.add_argument('--alpha-dec', type=float)
 parser.add_argument('--beta', type=float)
 parser.add_argument('--device', type=str)
 
