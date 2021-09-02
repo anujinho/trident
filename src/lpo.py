@@ -9,8 +9,8 @@ import tqdm
 from torch import nn, optim
 #from torch.utils.data import DataLoader
 
-from zoo.lpo_utils import setup, set_sets, inner_adapt_lpo, accuracy
-from utils import Profiler
+from src.zoo.lpo_utils import setup, set_sets, inner_adapt_lpo, accuracy
+from src.utils import Profiler
 
 ##############
 # Parameters #
