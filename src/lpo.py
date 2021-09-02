@@ -7,10 +7,10 @@ import torch
 import torch.nn.functional as F
 import tqdm
 from torch import nn, optim
-from torch.utils.data import DataLoader
+#from torch.utils.data import DataLoader
 
-from src.zoo.lpo_utils import setup, set_sets, inner_adapt_lpo, accuracy
-from src.utils import Profiler
+from zoo.lpo_utils import setup, set_sets, inner_adapt_lpo, accuracy
+from utils import Profiler
 
 ##############
 # Parameters #
@@ -28,7 +28,8 @@ parser.add_argument('--lr', type=float)
 parser.add_argument('--meta-batch-size', type=int)
 parser.add_argument('--iterations', type=int)
 parser.add_argument('--inner-iters', type=int)
-parser.add_argument('--order', type=bool)
+parser.add_argument('--alpha_dec', type=float)
+parser.add_argument('--beta', type=float)
 parser.add_argument('--device', type=str)
 
 args = parser.parse_args()
@@ -68,12 +69,12 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         for i in range(args.inner_iters):
             opt.zero_grad()
             evaluation_loss, query_preds = inner_adapt_lpo(
-                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots)
+                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
             evaluation_loss.backward()
             opt.step()
 
         meta_train_loss.append(evaluation_loss.item())
-        evaluation_accuracy = accuracy(query_preds[::args.n_ways,], queries_labels)  # fig this
+        evaluation_accuracy = accuracy(query_preds[::args.n_ways,], queries_labels)
         meta_train_acc.append(evaluation_accuracy.item())
         
     # lr_scheduler.step()
@@ -92,8 +93,8 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         for i in range(args.inner_iters):
             opt_temp.zero_grad()
             validation_loss, query_preds = inner_adapt_lpo(
-                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots)
-            validation_loss.backward
+                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
+            validation_loss.backward()
             opt_temp.step()
 
         meta_valid_loss.append(validation_loss.item())
@@ -133,8 +134,8 @@ for i, tetask in enumerate(test_tasks):
     for i in range(args.inner_iters):
         opt_temp.zero_grad()
         test_loss, query_preds = inner_adapt_lpo(
-            support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots)
-        test_loss.backward
+            support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
+        test_loss.backward()
         opt_temp.step()
 
     meta_test_loss.append(test_loss.item())
