@@ -9,7 +9,7 @@ import tqdm
 from torch import nn, optim
 #from torch.utils.data import DataLoader
 
-from src.zoo.lpo_utils import setup, set_sets, inner_adapt_lpo, accuracy
+from src.zoo.lpo_utils import setup, set_sets, inner_adapt_lpo, accuracy, LVAE
 from src.utils import Profiler
 
 ##############
@@ -36,7 +36,7 @@ args = parser.parse_args()
 
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
-train_tasks, valid_tasks, test_tasks, learner, learner_temp, embedder = setup(
+train_tasks, valid_tasks, test_tasks, embedder = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.test_ways, args.test_shots, args.test_queries, args.device)
 #learner_temp, learner_ttemp = learner
 #opt = optim.Adam(learner.parameters(), args.lr)
@@ -53,13 +53,13 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     meta_valid_loss = []
     meta_train_acc = []
     meta_valid_acc = []
-    learner.train()
 
     for batch in range(args.meta_batch_size):
 
-        learner_temp_state = copy.deepcopy(learner.state_dict())
-        learner_temp.load_state_dict(learner_temp_state)
-        opt = optim.Adam(learner_temp.parameters(), args.lr)
+        learner = LVAE(in_dims=512, y_shape=args.n_ways, latent_dim=64)
+        learner = learner.to(args.device)
+        learner.train()
+        opt = optim.Adam(learner.parameters(), args.lr)
         
         ttask = train_tasks.sample()
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
@@ -69,7 +69,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         for i in range(args.inner_iters):
             opt.zero_grad()
             evaluation_loss, query_preds = inner_adapt_lpo(
-                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
+                support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
             evaluation_loss.backward()
             opt.step()
 
@@ -82,9 +82,10 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     #learner.eval()
     for i, vtask in enumerate(valid_tasks):
 
-        learner_temp_state = copy.deepcopy(learner.state_dict())
-        learner_temp.load_state_dict(learner_temp_state)
-        opt_temp = optim.Adam(learner_temp.parameters(), args.lr)
+        learner = LVAE(in_dims=512, y_shape=args.n_ways, latent_dim=64)
+        learner = learner.to(args.device)
+        learner.train()
+        opt_temp = optim.Adam(learner.parameters(), args.lr)
 
         support, y_support, queries, qs, y_queries, queries_labels = set_sets(
             vtask, args.n_ways, args.k_shots, args.q_shots, embedder, args.device)
@@ -93,7 +94,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         for i in range(args.inner_iters):
             opt_temp.zero_grad()
             validation_loss, query_preds = inner_adapt_lpo(
-                support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
+                support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
             validation_loss.backward()
             opt_temp.step()
 
@@ -120,9 +121,10 @@ prof_test = Profiler('ProNets_test_{}_{}-way_{}-shot_{}-queries'.format(
 print('Testing on held out classes')
 for i, tetask in enumerate(test_tasks):
 
-    learner_temp = copy.deepcopy(learner.state_dict())
-    learner_temp.load_state_dict(learner_temp)
-    opt_temp = optim.Adam(learner_temp.parameters(), args.lr)
+    learner = LVAE(in_dims=512, y_shape=args.n_ways, latent_dim=64)
+    learner = learner.to(args.device)
+    learner.train()
+    opt_temp = optim.Adam(learner.parameters(), args.lr)
     opt_temp.zero_grad()
     meta_test_acc = []
     meta_test_loss = []
@@ -134,7 +136,7 @@ for i, tetask in enumerate(test_tasks):
     for i in range(args.inner_iters):
         opt_temp.zero_grad()
         test_loss, query_preds = inner_adapt_lpo(
-            support, y_support, qs, y_queries, learner_temp, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
+            support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
         test_loss.backward()
         opt_temp.step()
 

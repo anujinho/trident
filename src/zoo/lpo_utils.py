@@ -43,14 +43,14 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
 #     test_loader = DataLoader(test_tasks, pin_memory=True, shuffle=True)
 
 
-        learner = CVAE(in_channels=channels, y_shape=n_ways,
-                    base_channels=32, latent_dim=64)
-        learner = learner.to(device)
-        learner = LVAE(in_dims=512, y_shape=n_ways, latent_dim=64)
-        learner = learner.to(device)
+        # learner = CVAE(in_channels=channels, y_shape=n_ways,
+        #             base_channels=32, latent_dim=64)
+        # learner = learner.to(device)
+        # learner = LVAE(in_dims=512, y_shape=n_ways, latent_dim=64)
+        # learner = learner.to(device)
 
         embedder = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=64, remove_linear=True)
-        checkpoint = torch.load('/home/nfs/anujsingh/meta_lrng/files/checkpoint.pth.tar')
+        checkpoint = torch.load('/home/nfs/anujsingh/meta_lrng/files/model_best.pth.tar')
         model_dict = embedder.state_dict()
         params = checkpoint['state_dict']
         params = {k: v for k, v in params.items() if k in model_dict}
@@ -60,7 +60,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, test_ways, test_shots, test_q
         for p in embedder.parameters():
             p.requires_grad = False
 
-    return train_tasks, valid_tasks, test_tasks, learner, learner, embedder
+    return train_tasks, valid_tasks, test_tasks, embedder
 
 
 def accuracy(predictions, targets):
@@ -83,15 +83,21 @@ def proto_distr(mus, log_vars, n, k, type):
     return mu_p, var_p
 
 
-def classify(mu_p, var_p, mu_datums):
+def classify(mu_p, var_p, mu_datums, type):
     a = mu_datums.shape[0]
     b = mu_p.shape[0]
 
     # logits = MultivariateNormal(mu_p, torch.diag_embed(var_p)).log_prob(
     #     mu_datums.unsqueeze(1).expand(a, b, -1))
-    logits = - 0.5 * np.log(2 * np.pi) - torch.log(var_p).unsqueeze(0).expand(a, b, -1) / 2 - (mu_datums.unsqueeze(1).expand(
-        a, b, -1) - mu_p.unsqueeze(0).expand(a, b, -1))**2 / (2 * var_p.unsqueeze(0).expand(a, b, -1))
-    return torch.sum(logits, dim=-1)
+    if type == 'gaussian':
+        logits = - 0.5 * np.log(2 * np.pi) - torch.log(var_p).unsqueeze(0).expand(a, b, -1) / 2 - (mu_datums.unsqueeze(1).expand(
+            a, b, -1) - mu_p.unsqueeze(0).expand(a, b, -1))**2 / (2 * var_p.unsqueeze(0).expand(a, b, -1))
+        return torch.sum(logits, dim=-1)
+    
+    elif type == 'mahalanobis':
+        delta = mu_datums.unsqueeze(1).expand(a,b,-1) - mu_p.unsqueeze(0).expand(a,b,-1)
+        logits = -0.5 * torch.mul(torch.mul(delta, var_p.unsqueeze(0).expand(a,b,-1)**(-1)), delta)
+        return torch.sum(logits, dim=-1)
 
 
 def kl_div(mus, log_vars):
@@ -137,15 +143,15 @@ def inner_adapt_lpo(support, y_support, qs, y_queries, learner, reconstruction_l
 
     # Building Prototypical distributions
     proto_mu, proto_var = proto_distr(
-        support_mu, support_log_var, n_ways, k_shots, 'average')
+        support_mu, support_log_var, n_ways, k_shots, 'precision_weighted')
 
     # Forward pass on the Query datums
     queries_cap, queries_mu, queries_log_var = learner(qs, y_queries)
 
     support_logits = classify(
-        mu_p=proto_mu, var_p=proto_var, mu_datums=support_mu)
+        mu_p=proto_mu, var_p=proto_var, mu_datums=support_mu, type='mahalanobis')
     queries_logits = classify(
-        mu_p=proto_mu, var_p=proto_var, mu_datums=queries_mu)
+        mu_p=proto_mu, var_p=proto_var, mu_datums=queries_mu, type='mahalanobis')
 
     # adding up the losses
     ce_loss = torch.nn.CrossEntropyLoss(reduction='none')
@@ -161,7 +167,7 @@ def inner_adapt_lpo(support, y_support, qs, y_queries, learner, reconstruction_l
                              ::n_ways, ], torch.log(F.softmax(queries_logits, dim=1)[
                                  ::n_ways, ])), dim=1)
     alpha = alpha_dec*(q_shots/k_shots)
-    J_alpha = - L_support.mean() - U_queries.mean() + alpha * \
+    J_alpha =  -L_support.mean() - U_queries.mean() + alpha * \
         ce_loss(support_logits, torch.argmax(y_support, dim=1)).mean()
     J_alpha = J_alpha.mean()
 
