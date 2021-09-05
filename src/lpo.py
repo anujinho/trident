@@ -53,6 +53,16 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     meta_valid_loss = []
     meta_train_acc = []
     meta_valid_acc = []
+    if iteration % 10 == 0:
+        sm_s = 'sm_' + iteration + '.pt'
+        torch.save(sm, sm_s)
+        qm_s = 'qm_' + iteration + '.pt'
+        torch.save(qm, qm_s)
+        slv_s = 'slv_' + iteration + '.pt'
+        torch.save(sm, slv_s)
+        qlv_s = 'qlv' + iteration + '.pt'
+        torch.save(qlv, qlv_s)
+
 
     for batch in range(args.meta_batch_size):
 
@@ -68,7 +78,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         # Running inner adaptation loop
         for i in range(args.inner_iters):
             opt.zero_grad()
-            evaluation_loss, query_preds = inner_adapt_lpo(
+            evaluation_loss, query_preds, sm, slv, qm, qlv = inner_adapt_lpo(
                 support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
             evaluation_loss.backward()
             opt.step()
@@ -93,7 +103,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         # Running inner adaptation loop
         for i in range(args.inner_iters):
             opt_temp.zero_grad()
-            validation_loss, query_preds = inner_adapt_lpo(
+            validation_loss, query_preds, sm, slv, qm, qlv = inner_adapt_lpo(
                 support, y_support, qs, y_queries, learner, loss, args.n_ways, args.k_shots, args.q_shots, args.alpha_dec, args.beta)
             validation_loss.backward()
             opt_temp.step()

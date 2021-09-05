@@ -171,4 +171,4 @@ def inner_adapt_lpo(support, y_support, qs, y_queries, learner, reconstruction_l
         ce_loss(support_logits, torch.argmax(y_support, dim=1)).mean()
     J_alpha = J_alpha.mean()
 
-    return J_alpha, F.softmax(queries_logits, dim=1)
+    return J_alpha, F.softmax(queries_logits, dim=1), support_mu, support_log_var, queries_mu, queries_log_var 
