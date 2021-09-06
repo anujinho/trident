@@ -53,17 +53,7 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     meta_valid_loss = []
     meta_train_acc = []
     meta_valid_acc = []
-    if iteration % 10 == 0:
-        sm_s = 'sm_' + str(iteration) + '.pt'
-        torch.save(sm, sm_s)
-        qm_s = 'qm_' + str(iteration) + '.pt'
-        torch.save(qm, qm_s)
-        slv_s = 'slv_' + str(iteration) + '.pt'
-        torch.save(sm, slv_s)
-        qlv_s = 'qlv' + str(iteration) + '.pt'
-        torch.save(qlv, qlv_s)
-
-
+    
     for batch in range(args.meta_batch_size):
 
         learner = LVAE(in_dims=512, y_shape=args.n_ways, latent_dim=64)
@@ -86,6 +76,15 @@ for iteration in tqdm.tqdm(range(args.iterations)):
         meta_train_loss.append(evaluation_loss.item())
         evaluation_accuracy = accuracy(query_preds[::args.n_ways,], queries_labels)
         meta_train_acc.append(evaluation_accuracy.item())
+        if iteration % 10 == 0:
+            sm_s = 'sm_' + str(iteration) + '.pt'
+            torch.save(sm, sm_s)
+            qm_s = 'qm_' + str(iteration) + '.pt'
+            torch.save(qm, qm_s)
+            slv_s = 'slv_' + str(iteration) + '.pt'
+            torch.save(sm, slv_s)
+            qlv_s = 'qlv' + str(iteration) + '.pt'
+            torch.save(qlv, qlv_s)
         
     # lr_scheduler.step()
 
