@@ -54,13 +54,13 @@ for iteration in tqdm.tqdm(range(args.iterations)):
     meta_train_acc = []
     meta_valid_acc = []
     if iteration % 10 == 0:
-        sm_s = 'sm_' + iteration + '.pt'
+        sm_s = 'sm_' + str(iteration) + '.pt'
         torch.save(sm, sm_s)
-        qm_s = 'qm_' + iteration + '.pt'
+        qm_s = 'qm_' + str(iteration) + '.pt'
         torch.save(qm, qm_s)
-        slv_s = 'slv_' + iteration + '.pt'
+        slv_s = 'slv_' + str(iteration) + '.pt'
         torch.save(sm, slv_s)
-        qlv_s = 'qlv' + iteration + '.pt'
+        qlv_s = 'qlv' + str(iteration) + '.pt'
         torch.save(qlv, qlv_s)
 
 
