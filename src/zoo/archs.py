@@ -396,7 +396,7 @@ class CEncoder(nn.Module):
             - dataset: name of the dataset
             - act_fn : Activation function used throughout the encoder network
         """
-        super(CEncoder).__init__()
+        super(CEncoder, self).__init__()
         c_hid = base_channel_size
         if dataset == 'omniglot':
             self.net = nn.Sequential(
@@ -470,7 +470,7 @@ class CDecoder(nn.Module):
             - latent_dim : Dimensionality of latent representation z + Dimensionality of one-hot encoded label 
             - act_fn : Activation function used throughout the decoder network
         """
-        super(CDecoder).__init__()
+        super(CDecoder, self).__init__()
         c_hid = base_channel_size
         self.dataset = dataset
         if self.dataset == 'omniglot':
@@ -565,7 +565,7 @@ class Classifier_VAE(nn.Module):
     from this distribution to produce logits for classification. """    
 
     def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.ReLU):
-        super(Classifier_VAE).__init__()
+        super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
         self.latent_dim = latent_dim
@@ -599,7 +599,7 @@ class CCVAE(nn.Module):
     for reconstructing the input image. """
     
     def __init__(self, in_channels, base_channels, n_ways, dataset, latent_dim_l=64, latent_dim_s=64):
-        super(CCVAE).__init__()
+        super(CCVAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
         self.dataset = dataset
