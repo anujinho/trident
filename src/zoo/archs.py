@@ -396,7 +396,7 @@ class CEncoder(nn.Module):
             - dataset: name of the dataset
             - act_fn : Activation function used throughout the encoder network
         """
-        super().__init__()
+        super(CEncoder).__init__()
         c_hid = base_channel_size
         if dataset == 'omniglot':
             self.net = nn.Sequential(
@@ -470,7 +470,7 @@ class CDecoder(nn.Module):
             - latent_dim : Dimensionality of latent representation z + Dimensionality of one-hot encoded label 
             - act_fn : Activation function used throughout the decoder network
         """
-        super().__init__()
+        super(CDecoder).__init__()
         c_hid = base_channel_size
         self.dataset = dataset
         if self.dataset == 'omniglot':
@@ -564,7 +564,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """    
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.ReLU):
         super(Classifier_VAE).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -572,7 +572,7 @@ class Classifier_VAE(nn.Module):
         self.classes = n_ways
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
 
         self.classifier = nn.Sequential(
             nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
@@ -613,7 +613,7 @@ class CCVAE(nn.Module):
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
-        self.classifier_vae = Classifier_VAE(self.in_channels, self.base_channels, self.latent_dim_l, self.classes)
+        self.classifier_vae = Classifier_VAE(self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset)
 
     def reparameterize(self, mu, logvar):
         if self.training:
