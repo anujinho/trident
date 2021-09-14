@@ -3,6 +3,7 @@ from scipy.stats import truncnorm
 from torch._C import device
 from torch import nn
 from torch.nn import functional as F
+from torch.utils.data import dataset
 
 
 def truncated_normal_(tensor, mean=0.0, std=1.0):
@@ -289,115 +290,14 @@ class MatchingNetwork(torch.nn.Module):
     def forward(self, x):
         pass
 
-class CEncoder(nn.Module):
-
-    def __init__(self,
-                 num_input_channels : int,
-                 base_channel_size : int,
-                 latent_dim : int,
-                 act_fn : object = nn.ReLU):
-        """
-        Inputs:
-            - num_input_channels : Number of input channels of the image
-            - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
-            - latent_dim : Dimensionality of latent representation z
-            - act_fn : Activation function used throughout the encoder network
-        """
-        super().__init__()
-        c_hid = base_channel_size
-        self.net = nn.Sequential(
-            nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1, stride=2), # 28x28 => 16x16
-            act_fn(),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            act_fn(),
-            nn.Conv2d(c_hid, 2*c_hid, kernel_size=3, padding=1, stride=2), # 16x16 => 8x8
-            act_fn(),
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
-            act_fn(),
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1, stride=2), # 8x8 => 4x4
-            act_fn(),
-            nn.Flatten(), # Image grid to single feature vector
-        )
-        self.h1 = nn.Linear(2*16*c_hid, latent_dim)
-        self.h2 = nn.Linear(2*16*c_hid, latent_dim)
-
-    def forward(self, x):
-        x = self.net(x)
-        mu = self.h1(x)
-        log_var = self.h2(x)
-        return mu, log_var
-
-class CDecoder(nn.Module):
-
-    def __init__(self,
-                 num_input_channels : int,
-                 base_channel_size : int,
-                 latent_dim : int,
-                 act_fn : object = nn.LeakyReLU):
-        """
-        Inputs:
-            - num_input_channels : Number of channels of the image to reconstruct.
-            - base_channel_size : Number of channels we use in the last convolutional layers. Early layers use a 2x of it.
-            - latent_dim : Dimensionality of latent representation z + Dimensionality of one-hot encoded label 
-            - act_fn : Activation function used throughout the decoder network
-        """
-        super().__init__()
-        c_hid = base_channel_size
-        self.linear = nn.Sequential(
-            nn.Linear(latent_dim, 2*16*c_hid),
-            act_fn()
-        )
-        self.net = nn.Sequential(
-            nn.ConvTranspose2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1, stride=2), # 4x4 => 8x8
-            act_fn(),
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
-            act_fn(),
-            nn.ConvTranspose2d(2*c_hid, c_hid, kernel_size=3, output_padding=1, padding=1, stride=2), # 8x8 => 16x16
-            act_fn(),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            act_fn(),
-            nn.ConvTranspose2d(c_hid, num_input_channels, kernel_size=3, output_padding=1, padding=1, stride=2), # 16x16 => 32x32
-            nn.Sigmoid() # The input image is scaled between 0 and 1, hence the output has to be bounded as well
-        )
-
-    def forward(self, x):
-        x = self.linear(x)
-        x = x.reshape(x.shape[0], -1, 4, 4)
-        x = self.net(x)
-        return x
-
-class CVAE(nn.Module):
-    def __init__(self, in_channels, y_shape, base_channels, latent_dim=64):
-        super(CVAE, self).__init__()
-        self.in_channels = in_channels
-        self.base_channels = base_channels
-        self.latent_dim = latent_dim
-        self.dec_latent_dim = self.latent_dim + y_shape
-
-        self.encoder = CEncoder(num_input_channels=self.in_channels, base_channel_size=self.base_channels, latent_dim=self.latent_dim)
-
-        self.decoder = CDecoder(num_input_channels=self.in_channels, base_channel_size=self.base_channels, latent_dim=self.dec_latent_dim)
-
-    def reparameterize(self, mu, logvar):
-        if self.training:
-            std = torch.exp(0.5 * logvar)
-            eps = torch.randn_like(std)
-            return eps.mul(std).add_(mu)
-        else:
-            return mu
-
-    def forward(self, x, y):
-        mu, log_var = self.encoder(x)
-        z = self.reparameterize(mu, log_var)
-        x = self.decoder(torch.cat([z, y], dim=1))
-        return x, mu, log_var
 
 class LEncoder(nn.Module):
+    """ Linear Encoder to transform an input image representation/vector into a latent-space gaussian distribution parametrized by its mean and log-variance. """
 
     def __init__(self,
-                 input_dims : int,
-                 latent_dim : int,
-                 act_fn : object = nn.ReLU):
+                 input_dims: int,
+                 latent_dim: int,
+                 act_fn: object = nn.ReLU):
         """
         Inputs:
             - input_dims : Number of input dimensions of the image-embedding
@@ -407,9 +307,9 @@ class LEncoder(nn.Module):
         super().__init__()
 
         self.net = nn.Sequential(nn.Linear(input_dims, 256),
-        act_fn(),
-        nn.Linear(256, 128),
-        act_fn())
+                                 act_fn(),
+                                 nn.Linear(256, 128),
+                                 act_fn())
         self.h1 = nn.Linear(128, latent_dim)
         self.h2 = nn.Linear(128, latent_dim)
 
@@ -419,12 +319,14 @@ class LEncoder(nn.Module):
         log_var = self.h2(x)
         return mu, log_var
 
+
 class LDecoder(nn.Module):
+    """ Linear Decoder for reconstructing an image representation/vector using a latent variable z as input. """
 
     def __init__(self,
-                 input_dims : int,
-                 latent_dim : int,
-                 act_fn : object = nn.LeakyReLU):
+                 input_dims: int,
+                 latent_dim: int,
+                 act_fn: object = nn.LeakyReLU):
         """
         Inputs:
             - input_dims : Number of input dimensions of the image-embedding to be reconstructed
@@ -432,29 +334,35 @@ class LDecoder(nn.Module):
             - act_fn : Activation function used throughout the encoder network
         """
         super().__init__()
-      
+
         self.net = nn.Sequential(
             nn.Linear(latent_dim, 128),
             act_fn(),
             nn.Linear(128, 256),
             act_fn(),
-            nn.Linear(256, input_dims)           
+            nn.Linear(256, input_dims)
         )
 
     def forward(self, x):
         x = self.net(x)
         return x
 
+
 class LVAE(nn.Module):
+    """ Module for a Linear VAE: Linear Encoder + Decoder. The decoder uses the latent-space vector z 
+    drawn from the gaussian distribution and a one-hot encoded vector of class label to reconstruct the input vector. """
+
     def __init__(self, in_dims, y_shape, latent_dim=64):
         super(LVAE, self).__init__()
         self.in_dims = in_dims
         self.latent_dim = latent_dim
         self.dec_latent_dim = self.latent_dim + y_shape
 
-        self.encoder = LEncoder(input_dims=self.in_dims, latent_dim=self.latent_dim)
+        self.encoder = LEncoder(input_dims=self.in_dims,
+                                latent_dim=self.latent_dim)
 
-        self.decoder = LDecoder(input_dims=self.in_dims, latent_dim=self.dec_latent_dim)
+        self.decoder = LDecoder(input_dims=self.in_dims,
+                                latent_dim=self.dec_latent_dim)
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -469,6 +377,259 @@ class LVAE(nn.Module):
         z = self.reparameterize(mu, log_var)
         x = self.decoder(torch.cat([z, y], dim=1))
         return x, mu, log_var
+
+
+class CEncoder(nn.Module):
+    """ Convolutional Encoder to transform an input image into a latent-space gaussian distribution parametrized by its mean and log-variance. """
+
+    def __init__(self,
+                 num_input_channels: int,
+                 base_channel_size: int,
+                 latent_dim: int,
+                 dataset: str,
+                 act_fn: object = nn.ReLU):
+        """
+        Inputs:
+            - num_input_channels : Number of input channels of the image
+            - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
+            - latent_dim : Dimensionality of latent representation z
+            - dataset: name of the dataset
+            - act_fn : Activation function used throughout the encoder network
+        """
+        super().__init__()
+        c_hid = base_channel_size
+        if dataset == 'omniglot':
+            self.net = nn.Sequential(
+                nn.Conv2d(num_input_channels, c_hid, kernel_size=3,
+                        padding=1, stride=2),  # 28x28 => 16x16
+                act_fn(),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                act_fn(),
+                nn.Conv2d(c_hid, 2*c_hid, kernel_size=3,
+                        padding=1, stride=2),  # 16x16 => 8x8
+                act_fn(),
+                nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
+                act_fn(),
+                nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3,
+                        padding=1, stride=2),  # 8x8 => 4x4
+                act_fn(),
+                nn.Flatten(),  # Image grid to single feature vector
+            )
+            self.h1 = nn.Linear(2*16*c_hid, latent_dim)
+            self.h2 = nn.Linear(2*16*c_hid, latent_dim)
+
+        elif dataset =='mini_imagenet':
+            self.net = nn.Sequential(
+            nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+            nn.BatchNorm2d(c_hid),
+            nn.ReLU(),
+            nn.MaxPool2d(3), # 28 x 28
+
+            # nn.ZeroPad2d(conv_padding),
+            nn.Conv2d(c_hid, 2*c_hid, kernel_size=3, padding=1),
+            nn.BatchNorm2d(2*c_hid),
+            nn.ReLU(),
+            nn.MaxPool2d(3), # 9x9
+
+            # nn.ZeroPad2d(conv_padding),
+            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
+            nn.BatchNorm2d(2*c_hid),
+            nn.ReLU(),
+            nn.MaxPool2d(3), #3x3
+
+            # nn.ZeroPad2d(conv_padding),
+            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
+            nn.BatchNorm2d(2*c_hid),
+            nn.ReLU(),
+            nn.MaxPool2d(3), #1x1
+            nn.Flatten()
+            )
+            self.h1 = nn.Linear(2*c_hid, latent_dim)
+            self.h2 = nn.Linear(2*c_hid, latent_dim)
+
+    def forward(self, x):
+        x = self.net(x)
+        mu = self.h1(x)
+        log_var = self.h2(x)
+        return mu, log_var
+
+
+class CDecoder(nn.Module):
+    """ Convolutional Decoder for reconstructing an image using a latent variable z as input. """
+
+    def __init__(self,
+                 num_input_channels: int,
+                 base_channel_size: int,
+                 latent_dim: int,
+                 dataset: str,
+                 act_fn: object = nn.LeakyReLU):
+        """
+        Inputs:
+            - num_input_channels : Number of channels of the image to reconstruct.
+            - base_channel_size : Number of channels we use in the last convolutional layers. Early layers use a 2x of it.
+            - latent_dim : Dimensionality of latent representation z + Dimensionality of one-hot encoded label 
+            - act_fn : Activation function used throughout the decoder network
+        """
+        super().__init__()
+        c_hid = base_channel_size
+        self.dataset = dataset
+        if self.dataset == 'omniglot':
+            self.linear = nn.Sequential(
+                nn.Linear(latent_dim, 2*16*c_hid),
+                act_fn()
+            )
+            self.net = nn.Sequential(
+                nn.ConvTranspose2d(2*c_hid, 2*c_hid, kernel_size=3,
+                                padding=1, stride=2),  # 4x4 => 8x8
+                act_fn(),
+                nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
+                act_fn(),
+                nn.ConvTranspose2d(2*c_hid, c_hid, kernel_size=3,
+                                output_padding=1, padding=1, stride=2),  # 8x8 => 16x16
+                act_fn(),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                act_fn(),
+                nn.ConvTranspose2d(c_hid, num_input_channels, kernel_size=3,
+                                output_padding=1, padding=1, stride=2),  # 16x16 => 32x32
+                nn.Sigmoid()  # The input image is scaled between 0 and 1, hence the output has to be bounded as well
+            )
+        
+        elif self.dataset == 'mini_imagenet':
+            self.net = nn.Sequential(
+            nn.UpsamplingNearest2d(size=(3, 3)),
+            nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
+            nn.BatchNorm2d(c_hid),
+            nn.ReLU(), # 3x3
+
+            nn.UpsamplingNearest2d(size=(9, 9)),
+            nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
+            nn.BatchNorm2d(c_hid),
+            nn.ReLU(), #
+
+            nn.UpsamplingNearest2d(size=(28, 28)),
+            nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
+            nn.BatchNorm2d(c_hid),
+            nn.ReLU(),
+
+            nn.UpsamplingNearest2d(size=(84, 84)),
+            nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels, kernel_size=3, padding='same'),
+            nn.BatchNorm2d(num_input_channels),
+            #nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        if self.dataset == 'omniglot':
+            x = self.linear(x)
+            x = x.reshape(x.shape[0], -1, 4, 4)
+        elif self.dataset == 'mini_imagenet':
+            x = x.unsqueeze(-1).unsqueeze(-1)
+        x = self.net(x)
+        return x
+
+
+class CVAE(nn.Module):
+    """ Module for a Convolutional VAE: Convolutional Encoder + Decoder. The decoder uses the 
+    latent-space vector z drawn from the gaussian distribution and a one-hot encoded vector of 
+    the class label to reconstruct the input. """
+
+    def __init__(self, in_channels, y_shape, base_channels, latent_dim=64):
+        super(CVAE, self).__init__()
+        self.in_channels = in_channels
+        self.base_channels = base_channels
+        self.latent_dim = latent_dim
+        self.dec_latent_dim = self.latent_dim + y_shape
+
+        self.encoder = CEncoder(num_input_channels=self.in_channels,
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim)
+
+        self.decoder = CDecoder(num_input_channels=self.in_channels,
+                                base_channel_size=self.base_channels, latent_dim=self.dec_latent_dim)
+
+    def reparameterize(self, mu, logvar):
+        if self.training:
+            std = torch.exp(0.5 * logvar)
+            eps = torch.randn_like(std)
+            return eps.mul(std).add_(mu)
+        else:
+            return mu
+
+    def forward(self, x, y):
+        mu, log_var = self.encoder(x)
+        z = self.reparameterize(mu, log_var)
+        x = self.decoder(torch.cat([z, y], dim=1))
+        return x, mu, log_var
+
+class Classifier_VAE(nn.Module):
+    """ Module for a Convolutional-VAE: Convolutional Encoder + Linear Classifier that 
+    transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
+    from this distribution to produce logits for classification. """    
+
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, act_fn: object = nn.ReLU):
+        super(Classifier_VAE).__init__()
+        self.in_channels = in_channels
+        self.base_channels = base_channels
+        self.latent_dim = latent_dim
+        self.classes = n_ways
+
+        self.encoder = CEncoder(num_input_channels=self.in_channels,
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
+            nn.Linear(self.latent_dim//2, self.classes))
+
+    def reparameterize(self, mu, logvar):
+        if self.training:
+            std = torch.exp(0.5 * logvar)
+            eps = torch.randn_like(std)
+            return eps.mul(std).add_(mu)
+        else:
+            return mu
+
+    def forward(self, x):
+        mu, log_var = self.encoder(x)
+        z = self.reparameterize(mu, log_var)
+        logits = self.classifier(z)
+        return logits, mu, log_var
+
+
+class CCVAE(nn.Module):
+    """ Module for a Conditional-Convolutional VAE: Classifier-VAE + Convolutional Encoder-Decoder. 
+    The Conv. Encoder-Decoder is conditioned on the z_l drawn from the class-latent gaussian distribution 
+    for reconstructing the input image. """
+    
+    def __init__(self, in_channels, base_channels, n_ways, dataset, latent_dim_l=64, latent_dim_s=64):
+        super(CCVAE).__init__()
+        self.in_channels = in_channels
+        self.base_channels = base_channels
+        self.dataset = dataset
+        self.latent_dim_l = latent_dim_l
+        self.latent_dim_s = latent_dim_s
+        self.classes = n_ways
+
+        self.encoder = CEncoder(num_input_channels=self.in_channels,
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset)
+
+        self.decoder = CDecoder(num_input_channels=self.in_channels,
+                                base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
+
+        self.classifier_vae = Classifier_VAE(self.in_channels, self.base_channels, self.latent_dim_l, self.classes)
+
+    def reparameterize(self, mu, logvar):
+        if self.training:
+            std = torch.exp(0.5 * logvar)
+            eps = torch.randn_like(std)
+            return eps.mul(std).add_(mu)
+        else:
+            return mu
+
+    def forward(self, x):
+        logits, mu_l, log_var_l = self.classifier_vae(x)
+        mu_s, log_var_s = self.encoder(x)
+        z_s = self.reparameterize(mu_s, log_var_s)
+        x = self.decoder(torch.cat([z_s, mu_l], dim=1))
+        return x, logits, mu_l, log_var_l, mu_s, log_var_s
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -512,6 +673,7 @@ class BasicBlock(nn.Module):
 
         return out
 
+
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, remove_linear=False):
@@ -533,7 +695,8 @@ class ResNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -586,98 +749,3 @@ class ResNet(nn.Module):
             return x, x1
         x = self.fc(x)
         return x
-
-# class VAE(nn.Module):
-#     ## Under Construction ##
-    
-#     """ Creates a Convolutional VAE with an Encoder/ Inference Network: q(z/x) and Decoder/ Generative Network: p(z/x,y) 
-#     # Arguments:-
-#         channels: no. of input channels
-#         latent_dim: dimensionality of latent space z
-#         layer_count: no. of deep-conv layers in the encoder and decoder
-#      """
-
-#     def __init__(self, channels, latent_dim, d, kernel_size=3, stride=2, padding=1, layer_count=3):
-#         super(VAE, self).__init__()
-
-#         self.d = d
-#         self.latent_dim = latent_dim
-#         self.layer_count = layer_count
-#         mul = 1
-#         self.in_channels = channels
-#         inputs = channels
-
-#         # Encoder layers
-
-#         for i in range(self.layer_count):
-#             setattr(self, "conv%d" % (i + 1), torch.nn.Conv2d(in_channels=inputs, out_channels=self.d * mul, kernel_size=3, stride=2, padding=1))
-#             setattr(self, "conv%d_bn" % (i + 1), torch.nn.BatchNorm2d(d * mul))
-#             inputs = d * mul
-#             mul *= 2
-
-#         self.d_max = inputs
-
-#         self.fc1 = nn.Linear(inputs * 11 * 11, self.latent_dim)
-#         self.fc2 = nn.Linear(inputs * 11 * 11, self.latent_dim)
-
-#         # Decoder Layers
-
-#         self.d1 = nn.Linear(self.latent_dim, inputs * 11 * 11)
-
-#         mul = inputs // d // 2
-
-#         for i in range(1, self.layer_count):
-#             setattr(self, "deconv%d" % (i + 1), torch.nn.ConvTranspose2d(in_channels=inputs, out_channels=self.d * mul, kernel_size=3, stride=2, padding=1))
-#             setattr(self, "deconv%d_bn" % (i + 1), torch.nn.BatchNorm2d(d * mul))
-#             inputs = d * mul
-#             mul //= 2
-
-#         setattr(self, "deconv%d" % (self.layer_count + 1), nn.ConvTranspose2d(in_channels=inputs, out_channels=channels, kernel_size=3, stride=2))
-
-#     def encode(self, x):
-#         for i in range(self.layer_count):
-#             x = F.relu(getattr(self, "conv%d_bn" % (i + 1))(getattr(self, "conv%d" % (i + 1))(x)))
-
-#         x = x.view(x.size(0), -1)
-#         #x = x.view(x.shape[0], self.d_max * 4 * 4)
-#         h1 = self.fc1(x)
-#         h2 = self.fc2(x)
-#         return h1, h2
-        
-#     def reparameterize(self, mu, logvar):
-#         if self.training:
-#             std = torch.exp(0.5 * logvar)
-#             eps = torch.randn_like(std)
-#             return eps.mul(std).add_(mu)
-#         else:
-#             return mu
-
-#     def decode(self, x):
-#         #x = torch.cat((x,y))
-#         x = x.view(x.shape[0], self.latent_dim)
-#         x = self.d1(x)
-#         x = x.view(x.shape[0], self.d_max, 11, 11)
-#         #x = self.deconv1_bn(x)
-#         x = F.leaky_relu(x, 0.2)
-
-#         for i in range(1, self.layer_count):
-#             x = F.leaky_relu(getattr(self, "deconv%d_bn" % (i + 1))(getattr(self, "deconv%d" % (i + 1))(x)), 0.2)
-
-#         x = torch.sigmoid(getattr(self, "deconv%d" % (self.layer_count + 1))(x))
-#         return x
-
-#     def forward(self, x):
-#         mu, logvar = self.encode(x)
-#         mu = mu.squeeze()
-#         logvar = logvar.squeeze()
-#         z = self.reparameterize(mu, logvar)
-#         return self.decode(z.view(-1, self.latent_dim, 1, 1)), mu, logvar
-
-#     def weight_init(self, mean, std):
-#         for m in self._modules:
-#             self.normal_init(self._modules[m], mean, std)
-
-#     def normal_init(self, m, mean, std):
-#         if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
-#             m.weight.data.normal_(mean, std)
-#             m.bias.data.zero_()
