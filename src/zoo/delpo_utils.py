@@ -24,7 +24,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
                                 k_shots=k_shots, q_shots=q_shots, classes=classes[1100:1200], num_tasks=200)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[1200:], num_tasks=600)
-        learner = CCVAE(in_channels=1, base_channels=64, n_ways=n_ways, dataset=dataset)
+        learner = CCVAE(in_channels=1, base_channels=64, n_ways=n_ways, dataset='omniglot')
 
     elif dataset == 'miniimagenet':
         # Generating tasks and model according to the MAML implementation for MiniImageNet
@@ -34,7 +34,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
         test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
-        learner = CCVAE(in_channels=3, base_channels=64, n_ways=n_ways, dataset=dataset)
+        learner = CCVAE(in_channels=3, base_channels=64, n_ways=n_ways, dataset='mini_imagenet')
 
     learner = learner.to(device)
     learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr)
