@@ -49,7 +49,7 @@ def accuracy(predictions, targets):
 def kl_div(mus, log_vars):
     return - 0.5 * (1 + log_vars - mus**2 - torch.exp(log_vars)).sum(dim=1)
 
-def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l):
+def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, kl_wt=1):
     kl_div_s = kl_div(mu_s, log_var_s).mean()
     kl_div_l = kl_div(mu_l, log_var_l).mean()
 
@@ -57,8 +57,8 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     classification_loss = ce_loss(F.softmax(logits, dim=1), labels)
     rec_loss = reconst_loss(reconst_image, image)
 
-    L = classification_loss + rec_loss + kl_div_s + kl_div_l  # -log p(x,y)
-    return L 
+    L = classification_loss + kl_wt*kl_div_l + rec_loss + kl_wt*kl_div_s  # -log p(x,y)
+    return L, classification_loss, rec_loss, kl_div_s, kl_div_l
 
 def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device):
     data, labels = task
@@ -78,10 +78,10 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     # Inner adapt step
     for _ in range(adapt_steps):
         reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(support)
-        adapt_loss = loss(reconst_loss, reconst_image, support, logits, support_labels, mu_s, log_var_s, mu_l, log_var_l)
-        learner.adapt(adapt_loss)
+        adapt_loss = loss(reconst_loss, reconst_image, support/256, logits, support_labels, mu_s, log_var_s, mu_l, log_var_l)
+        learner.adapt(adapt_loss[0])
 
     reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries)
-    eval_loss = loss(reconst_loss, reconst_image, queries, logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l)
+    eval_loss = loss(reconst_loss, reconst_image, queries/256, logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
     return eval_loss, eval_acc

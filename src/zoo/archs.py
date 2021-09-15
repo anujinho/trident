@@ -387,7 +387,7 @@ class CEncoder(nn.Module):
                  base_channel_size: int,
                  latent_dim: int,
                  dataset: str,
-                 act_fn: object = nn.ReLU):
+                 act_fn: object = nn.LeakyReLU):
         """
         Inputs:
             - num_input_channels : Number of input channels of the image
@@ -422,25 +422,25 @@ class CEncoder(nn.Module):
             self.net = nn.Sequential(
             nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            nn.ReLU(),
+            act_fn(),
             nn.MaxPool2d(3), # 28 x 28
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, 2*c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(2*c_hid),
-            nn.ReLU(),
+            act_fn(),
             nn.MaxPool2d(3), # 9x9
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(2*c_hid),
-            nn.ReLU(),
+            act_fn(),
             nn.MaxPool2d(3), #3x3
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(2*c_hid),
-            nn.ReLU(),
+            act_fn(),
             nn.MaxPool2d(3), #1x1
             nn.Flatten()
             )
@@ -499,22 +499,22 @@ class CDecoder(nn.Module):
             nn.UpsamplingNearest2d(size=(3, 3)),
             nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
-            nn.ReLU(), # 3x3
+            act_fn(), # 3x3
 
             nn.UpsamplingNearest2d(size=(9, 9)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
-            nn.ReLU(), #
+            act_fn(), #
 
             nn.UpsamplingNearest2d(size=(28, 28)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
-            nn.ReLU(),
+            act_fn(),
 
             nn.UpsamplingNearest2d(size=(84, 84)),
             nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels, kernel_size=3, padding='same'),
             nn.BatchNorm2d(num_input_channels),
-            #nn.Sigmoid()
+            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -564,7 +564,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """    
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.LeakyReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
