@@ -5,6 +5,7 @@ srun python -m src.delpo --dataset miniimagenet --root ../dataset/mini_imagenet 
 
 Activations: ReLU - Encoder + Decoder
 inner-lr: 0.01 and meta-lr: 0.001 - reset back to exp2 settings since decreasing doesn't help much, and increasing leads to negative performance  
+kl_div_wt: z_dim/input_dim multiplied with the kl_div terms as a normalization metric (beta-VAE)
 
 observations: loss reducing but classification accuracy not improving. seperation hasn't increased. 
                 Loss reduces quicker at the start, and then saturates at ~1.63 around ~1000 epochs. Notice that 1.65 loss is achieved very early on here.   
