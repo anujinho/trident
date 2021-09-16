@@ -423,29 +423,29 @@ class CEncoder(nn.Module):
             nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
             act_fn(),
-            nn.MaxPool2d(3), # 28 x 28
+            nn.MaxPool2d(2), # 28 x 28, # 42 x 42
 
             # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, 2*c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(2*c_hid),
+            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+            nn.BatchNorm2d(c_hid),
             act_fn(),
-            nn.MaxPool2d(3), # 9x9
+            nn.MaxPool2d(2), # 9x9 # 21 x 21
 
             # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
+            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(2*c_hid),
             act_fn(),
-            nn.MaxPool2d(3), #3x3
+            nn.MaxPool2d(2), #3x3 # 10 x 10
 
             # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(2*c_hid),
+            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+            nn.BatchNorm2d(c_hid),
             act_fn(),
-            nn.MaxPool2d(3), #1x1
+            nn.MaxPool2d(2), #1x1 # 5 x 5
             nn.Flatten()
             )
-            self.h1 = nn.Linear(2*c_hid, latent_dim)
-            self.h2 = nn.Linear(2*c_hid, latent_dim)
+            self.h1 = nn.Linear(c_hid*25, latent_dim) # for maxpool(2)
+            self.h2 = nn.Linear(c_hid*25, latent_dim)
 
     def forward(self, x):
         x = self.net(x)
@@ -496,17 +496,22 @@ class CDecoder(nn.Module):
         
         elif self.dataset == 'mini_imagenet':
             self.net = nn.Sequential(
-            nn.UpsamplingNearest2d(size=(3, 3)),
+            nn.UpsamplingNearest2d(size=(5, 5)),
             nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
-            act_fn(), # 3x3
+            act_fn(), 
 
-            nn.UpsamplingNearest2d(size=(9, 9)),
+            nn.UpsamplingNearest2d(size=(10, 10)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
-            act_fn(), #
+            act_fn(), 
 
-            nn.UpsamplingNearest2d(size=(28, 28)),
+            nn.UpsamplingNearest2d(size=(21, 21)),
+            nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
+            nn.BatchNorm2d(c_hid),
+            act_fn(),
+
+            nn.UpsamplingNearest2d(size=(42, 42)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
             act_fn(),
