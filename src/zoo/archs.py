@@ -433,7 +433,7 @@ class CEncoder(nn.Module):
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(2*c_hid),
+            nn.BatchNorm2d(c_hid),
             act_fn(),
             nn.MaxPool2d(2), #3x3 # 10 x 10
 
