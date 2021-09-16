@@ -1,6 +1,13 @@
+srun python -m src.delpo --dataset miniimagenet --root ../dataset/mini_imagenet --n-ways 5 --k-shots 5 --q-shots 15 
+--inner-adapt-steps-train 5 --inner-adapt-steps-test 5 --inner-lr 0.4 --meta-lr 0.001 --meta-batch-size 4 --iterations 10000 
+--order False --device cuda
+
+
 ReLU: Encoder + Decoder
 Inner learning rate: 0.4
 coefficients of all loss terms: 1
+
+observations: inner learning rate too high, gradients and loss explode after 1 inner optmization step and give nan loss/gradient values after that.
 
 train_acc_mean,train_acc_std,train_loss_mean,train_loss_std,valid_acc_mean,valid_acc_std,valid_loss_mean,valid_loss_std
 0.20000000298023224,0.0,nan,nan,0.20000000298023224,0.0,nan,nan

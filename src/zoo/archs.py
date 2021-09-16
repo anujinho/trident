@@ -387,7 +387,7 @@ class CEncoder(nn.Module):
                  base_channel_size: int,
                  latent_dim: int,
                  dataset: str,
-                 act_fn: object = nn.LeakyReLU):
+                 act_fn: object = nn.ReLU):
         """
         Inputs:
             - num_input_channels : Number of input channels of the image
@@ -462,7 +462,7 @@ class CDecoder(nn.Module):
                  base_channel_size: int,
                  latent_dim: int,
                  dataset: str,
-                 act_fn: object = nn.LeakyReLU):
+                 act_fn: object = nn.ReLU):
         """
         Inputs:
             - num_input_channels : Number of channels of the image to reconstruct.
