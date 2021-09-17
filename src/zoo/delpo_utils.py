@@ -49,21 +49,25 @@ def accuracy(predictions, targets):
 def kl_div(mus, log_vars):
     return - 0.5 * (1 + log_vars - mus**2 - torch.exp(log_vars)).sum(dim=1)
 
-def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, beta_l=1, beta_s=100):
+def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, wt_ce=10, kl_wt=False, rec_wt=1e-3, beta_l=1, beta_s=1):
     kl_div_s = kl_div(mu_s, log_var_s).mean()
     kl_div_l = kl_div(mu_l, log_var_l).mean()
-    kl_wt = mu_s.shape[-1] / (image.shape[-1] * image.shape[-2] * image.shape[-3])
+    if kl_wt:
+        kl_wt = mu_s.shape[-1] / (image.shape[-1] * image.shape[-2] * image.shape[-3])
+    else:
+        kl_wt = 1
 
     ce_loss = torch.nn.CrossEntropyLoss()
-    classification_loss = ce_loss(F.softmax(logits, dim=1), labels)
+    classification_loss = ce_loss(logits, labels)
     rec_loss = reconst_loss(reconst_image, image)
+    rec_loss = rec_loss.view(rec_loss.shape[0], -1).sum(dim=-1).mean()
 
-    L = classification_loss + beta_l*kl_wt*kl_div_l + 0.05*rec_loss + beta_s*kl_wt*kl_div_s  # -log p(x,y)
-    return L#, classification_loss, rec_loss, kl_div_s, kl_div_l
+    L = wt_ce*classification_loss + beta_l*kl_wt*kl_div_l + rec_wt*rec_loss + beta_s*kl_wt*kl_div_s  # -log p(x,y)
+    return L, kl_div_l, kl_div_s, rec_loss, classification_loss 
 
 def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device):
     data, labels = task
-    data, labels = data.to(device), labels.to(device)
+    data, labels = data.to(device) / 256, labels.to(device)
     total = n_ways * (k_shots + q_shots)
     queries_index = np.zeros(total)
 
@@ -79,10 +83,10 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     # Inner adapt step
     for _ in range(adapt_steps):
         reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(support)
-        adapt_loss = loss(reconst_loss, reconst_image, support/256, logits, support_labels, mu_s, log_var_s, mu_l, log_var_l)
-        learner.adapt(adapt_loss)
+        adapt_loss = loss(reconst_loss, reconst_image, support, logits, support_labels, mu_s, log_var_s, mu_l, log_var_l)
+        learner.adapt(adapt_loss[0])
 
     reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries)
-    eval_loss = loss(reconst_loss, reconst_image, queries/256, logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l)
+    eval_loss = loss(reconst_loss, reconst_image, queries, logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
     return eval_loss, eval_acc

@@ -495,11 +495,15 @@ class CDecoder(nn.Module):
             )
         
         elif self.dataset == 'mini_imagenet':
+            self.linear = nn.Sequential(
+                nn.Linear(latent_dim, 25*c_hid),
+                act_fn()
+            )
             self.net = nn.Sequential(
-            nn.UpsamplingNearest2d(size=(5, 5)),
-            nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(), 
+            # nn.UpsamplingNearest2d(size=(5, 5)),
+            # nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
+            # nn.BatchNorm2d(c_hid),
+            # act_fn(), 
 
             nn.UpsamplingNearest2d(size=(10, 10)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
@@ -527,7 +531,9 @@ class CDecoder(nn.Module):
             x = self.linear(x)
             x = x.reshape(x.shape[0], -1, 4, 4)
         elif self.dataset == 'mini_imagenet':
-            x = x.unsqueeze(-1).unsqueeze(-1)
+            #x = x.unsqueeze(-1).unsqueeze(-1)
+            x = self.linear(x)
+            x = x.reshape(x.shape[0], -1, 5, 5)
         x = self.net(x)
         return x
 
@@ -569,7 +575,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """    
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.LeakyReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
