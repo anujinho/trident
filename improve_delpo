@@ -1,0 +1,15 @@
+# Hyperparams:
+
+1. inner-lr: 1e-3
+2. meta-lr: 1e-4
+3. meta_batch_size: 10 
+
+4. activations in CEnc, CDec, Classifier: ReLU
+5. Classifier Arch: Linear(64 - 32 - n_ways)
+6. Classifier weights init: default
+
+Loss weights:
+1. wt_ce: 1e2
+2. kld_s: 1
+3. kld_l: 1
+4. wt_rec: 1e-2 
