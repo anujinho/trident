@@ -79,18 +79,27 @@ for iter in tqdm.tqdm(range(args.iterations)):
     meta_valid_losses.append([l.item() for l in validation_loss])
     meta_valid_acc.append(validation_accuracy.item())
 
-    profiler.log([np.array(meta_train_acc).mean(), np.array(meta_train_losses[::5]).mean(), np.array(meta_train_losses[1::5]).mean(),
-    np.array(meta_train_losses[2::5]).mean(), np.array(meta_train_losses[3::5]).mean(), np.array(meta_train_losses[4::5]).mean(),
-    np.array(meta_train_acc).std(), np.array(meta_train_losses[::5]).std(), np.array(meta_train_losses[1::5]).std(),
-    np.array(meta_train_losses[2::5]).std(), np.array(meta_train_losses[3::5]).std(), np.array(meta_train_losses[4::5]).std(),
-    np.array(meta_valid_acc).mean(), np.array(meta_valid_losses[::5]).mean(), np.array(meta_valid_losses[1::5]).mean(),
-    np.array(meta_valid_losses[2::5]).mean(), np.array(meta_valid_losses[3::5]).mean(), np.array(meta_valid_losses[4::5]).mean()])
+    #Logging
+    meta_train_losses = np.hstack(meta_train_losses)
+    meta_valid_losses = np.hstack(meta_valid_losses)
+    meta_train_acc = np.array(meta_train_acc)
+    meta_valid_acc = np.array(meta_valid_acc)
+    profiler.log([meta_train_acc.mean(), meta_train_losses[::5].mean(), meta_train_losses[1::5].mean(),
+                  meta_train_losses[2::5].mean(), meta_train_losses[3::5].mean(
+    ), meta_train_losses[4::5].mean(),
+        meta_train_acc.std(), meta_train_losses[::5].std(
+    ), meta_train_losses[1::5].std(),
+        meta_train_losses[2::5].std(), meta_train_losses[3::5].std(
+    ), meta_train_losses[4::5].std(),
+        meta_valid_acc.mean(), meta_valid_losses[::5].mean(
+    ), meta_valid_losses[1::5].mean(),
+        meta_valid_losses[2::5].mean(), meta_valid_losses[3::5].mean(), meta_valid_losses[4::5].mean()])
 
-    if (iter % 500 == 0):
-        print('Meta Train Accuracy: {:.4f} +- {:.4f}'.format(
-            np.array(meta_train_acc).mean(), np.array(meta_train_acc).std()))
-        print('Meta Valid Accuracy: {:.4f} +- {:.4f}'.format(
-            np.array(meta_valid_acc).mean(), np.array(meta_valid_acc).std()))
+    # if (iter % 500 == 0):
+    #     print('Meta Train Accuracy: {:.4f} +- {:.4f}'.format(
+    #         np.array(meta_train_acc).mean(), np.array(meta_train_acc).std()))
+    #     print('Meta Valid Accuracy: {:.4f} +- {:.4f}'.format(
+    #         np.array(meta_valid_acc).mean(), np.array(meta_valid_acc).std()))
 
     for p in learner.parameters():
         p.grad.data.mul_(1.0 / args.meta_batch_size)
@@ -110,9 +119,13 @@ for i, tetask in enumerate(test_tasks):
         tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device)
     meta_test_losses.append([l.item() for l in evaluation_loss])
     meta_test_acc.append(evaluation_accuracy.item())
-    prof_test.log(row=[np.array(meta_test_acc).mean(), np.array(meta_test_losses[::5]).mean(), np.array(meta_test_losses[1::5]).mean(),
-    np.array(meta_test_losses[2::5]).mean(), np.array(meta_test_losses[3::5]).mean(), np.array(meta_test_losses[4::5]).mean(),
-    np.array(meta_test_acc).std(), np.array(meta_test_losses[::5]).std(), np.array(meta_test_losses[1::5]).std(),
-    np.array(meta_test_losses[2::5]).std(), np.array(meta_test_losses[3::5]).std(), np.array(meta_test_losses[4::5]).std()])
-    print('Meta Test Accuracy', np.array(meta_test_acc).mean(),
-          '+-', np.array(meta_test_acc).std())
+
+    # Logging
+    meta_test_losses = np.hstack(meta_test_losses)
+    meta_test_acc = np.array(meta_test_acc)
+    prof_test.log(row=[meta_test_acc.mean(), meta_test_losses[::5].mean(), meta_test_losses[1::5].mean(),
+                       meta_test_losses[2::5].mean(), meta_test_losses[3::5].mean(), meta_test_losses[4::5].mean(),
+                        meta_test_acc.std(), meta_test_losses[::5].std(), meta_test_losses[1::5].std(),
+                        meta_test_losses[2::5].std(), meta_test_losses[3::5].std(), meta_test_losses[4::5].std()])
+    # print('Meta Test Accuracy', np.array(meta_test_acc).mean(),
+    #       '+-', np.array(meta_test_acc).std())
