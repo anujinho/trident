@@ -8,6 +8,8 @@
 5. Classifier Arch: Linear(64 - 32 - n_ways)
 6. Classifier weights init: default
 
+7. Dimensionality of z_l: 64 --- increase and have the 'decoder/classifier' with a more elaborate arch.
+
 Loss weights:
 1. wt_ce: 1e2
 2. kld_s: 1
