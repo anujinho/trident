@@ -49,7 +49,7 @@ def accuracy(predictions, targets):
 def kl_div(mus, log_vars):
     return - 0.5 * (1 + log_vars - mus**2 - torch.exp(log_vars)).sum(dim=1)
 
-def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, wt_ce=1e2, kl_wt=False, rec_wt=1e-2, beta_l=1, beta_s=1):
+def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, wt_ce=1e3, kl_wt=False, rec_wt=1e-2, beta_l=1, beta_s=1):
     kl_div_s = kl_div(mu_s, log_var_s).mean()
     kl_div_l = kl_div(mu_l, log_var_l).mean()
     if kl_wt:
