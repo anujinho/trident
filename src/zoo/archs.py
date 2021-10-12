@@ -586,8 +586,8 @@ class Classifier_VAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
 
         self.classifier = nn.Sequential(
-            #nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
-            nn.Linear(self.latent_dim, self.classes))
+            nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
+            nn.Linear(self.latent_dim//2, self.classes))
 
     def reparameterize(self, mu, logvar):
         if self.training:
