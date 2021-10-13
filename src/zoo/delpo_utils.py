@@ -53,10 +53,10 @@ def kl_div(mus, log_vars):
     return - 0.5 * (1 + log_vars - mus**2 - torch.exp(log_vars)).sum(dim=1)
 
 
-def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, wt_ce=1e2, kl_wt=False, rec_wt=1e-2, beta_l=1, beta_s=1):
+def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_var_s, mu_l, log_var_l, wt_ce=1e2, klwt=False, rec_wt=1e-2, beta_l=1, beta_s=1):
     kl_div_s = kl_div(mu_s, log_var_s).mean()
     kl_div_l = kl_div(mu_l, log_var_l).mean()
-    if kl_wt:
+    if klwt:
         kl_wt = mu_s.shape[-1] / (image.shape[-1] *
                                   image.shape[-2] * image.shape[-3])
     else:
@@ -76,9 +76,9 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_images: bool, **args):
+def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_images: bool, args):
     data, labels = task
-    data, labels = data.to(device) / 256, labels.to(device)
+    data, labels = data.to(device) / 255.0, labels.to(device)
     total = n_ways * (k_shots + q_shots)
     queries_index = np.zeros(total)
 
@@ -96,12 +96,12 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
         reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
             support)
         adapt_loss = loss(reconst_loss, reconst_image, support,
-                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l)
-        learner.adapt(adapt_loss[0])
+                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args['wt_ce'], args['klwt'], args['rec_wt'], args['beta_l'], args['beta_s'])
+        learner.adapt(adapt_loss['elbo'])
 
     reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries)
     eval_loss = loss(reconst_loss, reconst_image, queries,
-                     logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.kl_wt, args.rec_wt, args.beta_l, args.beta_s)
+                     logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args['wt_ce'], args['klwt'], args['rec_wt'], args['beta_l'], args['beta_s'])
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
 
     if log_images:
