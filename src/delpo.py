@@ -40,7 +40,7 @@ parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
 
 args = parser.parse_args()
-with open(args.cfg) as f:
+with open(args.cnfg) as f:
     parser = argparse.ArgumentParser()
     argparse_dict = vars(args)
     argparse_dict.update(json.load(f))
