@@ -93,6 +93,14 @@ for iter in tqdm.tqdm(range(args.iterations)):
         if (iter % 200 == 0) & (batch == 0):
             evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
+            
+            # Logging train-task images and latents
+            di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+            dl = {"label_latents": [mu_l, log_var_l],
+                  "style_latents": [mu_s, log_var_s]}
+            profiler.log_data(di, iter, 'images', 'train')
+            profiler.log_data(dl, iter, 'latents', 'train')
+
         else:
             evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
@@ -106,13 +114,6 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
     #     wandb.log(dict({f"train/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
     #               **{'train/accuracies': evaluation_accuracy.item(), 'train/task': (iter*args.meta_batch_size)+batch}))
-
-    # Logging train-task images and latents
-    di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-    dl = {"label_latents": [mu_l, log_var_l],
-          "style_latents": [mu_s, log_var_s]}
-    profiler.log_data(di, iter, 'train')
-    profiler.log_data(dl, iter, 'train')
 
     # rimages = wandb.Image(reconst_img, caption="Reconstructed Query Images")
     # qimages = wandb.Image(query_imgs, caption="Query Images")

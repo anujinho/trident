@@ -34,8 +34,8 @@ class Profiler():
             else:
                 csv_writer.writerow(row)
 
-    def log_data(self, data, epoch, mode):
-        self.path_data = self.path + '/' + 'images_epoch-' + str(epoch) + '_' + mode + '.pt'
+    def log_data(self, data, epoch, mode1, mode2):
+        self.path_data = self.path + '/' + mode1 + '_epoch-' + str(epoch) + '_' + mode2 + '.pt'
         torch.save(data, self.path_data)
 
 
