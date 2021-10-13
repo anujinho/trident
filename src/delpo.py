@@ -124,6 +124,13 @@ for iter in tqdm.tqdm(range(args.iterations)):
     if iter % 200 == 0:
         validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
+        # Logging valid-task images and latents
+        di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+        dl = {"label_latents": [mu_l, log_var_l],
+            "style_latents": [mu_s, log_var_s]}
+        profiler.log_data(di, iter, 'images', 'valid')
+        profiler.log_data(dl, iter, 'latents', 'valid')
+
     else:
         validation_loss, validation_accuracy = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
@@ -135,13 +142,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
     # wandb.log(dict({f"valid/{key}": loss.item() for _, (key, loss) in enumerate(validation_loss.items())},
     #           **{'valid/accuracies': validation_accuracy.item(), 'valid/task': iter}))
 
-    # Logging valid-task images and latents
-    di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-    dl = {"label_latents": [mu_l, log_var_l],
-          "style_latents": [mu_s, log_var_s]}
-    profiler.log_data(di, iter, 'valid')
-    profiler.log_data(dl, iter, 'valid')
-
+    # Meta backpropagation of gradients
     for p in learner.parameters():
         p.grad.data.mul_(1.0 / args.meta_batch_size)
     opt.step()
