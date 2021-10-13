@@ -96,12 +96,12 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
         reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
             support)
         adapt_loss = loss(reconst_loss, reconst_image, support,
-                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args['wt_ce'], args['klwt'], args['rec_wt'], args['beta_l'], args['beta_s'])
+                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
         learner.adapt(adapt_loss['elbo'])
 
     reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries)
     eval_loss = loss(reconst_loss, reconst_image, queries,
-                     logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args['wt_ce'], args['klwt'], args['rec_wt'], args['beta_l'], args['beta_s'])
+                     logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
 
     if log_images:
