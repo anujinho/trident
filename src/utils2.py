@@ -13,7 +13,7 @@ class Profiler():
         #columns = columns.append(additional)
         df = pd.DataFrame(columns=columns)
         self.path = '/home/anuj/Desktop/Work/TU_Delft/research/implement/learning_to_meta-learn/logs/' + name + '/' + experiment
-        os.makedirs(self.path)
+        os.makedirs(self.path, mode=0o777)
 
         self.path_train = self.path + '/' + 'train.csv'
         self.path_valid = self.path + '/' + 'valid.csv'
