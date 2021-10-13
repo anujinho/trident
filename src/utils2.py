@@ -34,9 +34,9 @@ class Profiler():
             else:
                 csv_writer.writerow(row)
 
-    def log_imgs(self, images, epoch, mode):
-        self.path_imgs = self.path + '/' + 'images_epoch-' + str(epoch) + '_' + mode + '.pt'
-        torch.save(images, self.path_imgs)
+    def log_data(self, data, epoch, mode):
+        self.path_data = self.path + '/' + 'images_epoch-' + str(epoch) + '_' + mode + '.pt'
+        torch.save(data, self.path_imgs)
 
 
 # /home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/

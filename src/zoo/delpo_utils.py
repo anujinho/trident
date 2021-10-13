@@ -76,7 +76,7 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_images: bool, args):
+def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args):
     data, labels = task
     data, labels = data.to(device) / 255.0, labels.to(device)
     total = n_ways * (k_shots + q_shots)
@@ -104,7 +104,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
 
-    if log_images:
-        return eval_loss, eval_acc, reconst_image, queries
+    if log_data:
+        return eval_loss, eval_acc, reconst_image, queries, mu_l, log_var_l, mu_s, log_var_s
     else:
         return eval_loss, eval_acc

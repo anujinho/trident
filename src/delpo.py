@@ -1,4 +1,4 @@
-import argparse
+from jsonargparse import ArgumentParser, ActionConfigFile
 
 #import numpy as np
 import tqdm
@@ -14,7 +14,8 @@ from src.utils2 import Profiler
 # Parameters #
 ##############
 
-parser = argparse.ArgumentParser()
+parser = ArgumentParser()
+parser.add_argument('--cnfg', type=ActionConfigFile)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
 parser.add_argument('--n-ways', type=int)
@@ -79,8 +80,8 @@ for iter in tqdm.tqdm(range(args.iterations)):
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()
         model = learner.clone()
-        if bool((iter%100==0) & (batch==0)):
-            evaluation_loss, evaluation_accuracy, reconst_img, query_imgs = inner_adapt_delpo(
+        if (iter%200==0) & (batch==0):
+            evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
         else:
             evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
@@ -96,17 +97,20 @@ for iter in tqdm.tqdm(range(args.iterations)):
     #     wandb.log(dict({f"train/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
     #               **{'train/accuracies': evaluation_accuracy.item(), 'train/task': (iter*args.meta_batch_size)+batch}))
 
-    # Logging train-task images
-    d = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-    profiler.log_imgs(d, iter, 'train')
+    # Logging train-task images and latents
+    di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+    dl = {"label_latents": [mu_l, log_var_l], "style_latents": [mu_s, log_var_s]}
+    profiler.log_data(di, iter, 'train')
+    profiler.log_data(dl, iter, 'train')
+
     # rimages = wandb.Image(reconst_img, caption="Reconstructed Query Images")  
     # qimages = wandb.Image(query_imgs, caption="Query Images")
     # wandb.log({"reconst_examples": rimages, "gt_examples": qimages})
 
     vtask = valid_tasks.sample()
     model = learner.clone()
-    if iter%100 == 0:
-        validation_loss, validation_accuracy, reconst_img, query_imgs = inner_adapt_delpo(
+    if iter%200 == 0:
+        validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
     else:
         validation_loss, validation_accuracy = inner_adapt_delpo(
@@ -119,9 +123,11 @@ for iter in tqdm.tqdm(range(args.iterations)):
     # wandb.log(dict({f"valid/{key}": loss.item() for _, (key, loss) in enumerate(validation_loss.items())},
     #           **{'valid/accuracies': validation_accuracy.item(), 'valid/task': iter}))
     
-    # Logging valid-task images
-    d = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-    profiler.log_imgs(d, iter, 'valid')
+    # Logging valid-task images and latents
+    di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+    dl = {"label_latents": [mu_l, log_var_l], "style_latents": [mu_s, log_var_s]}
+    profiler.log_data(di, iter, 'valid')
+    profiler.log_data(dl, iter, 'valid')
 
     for p in learner.parameters():
         p.grad.data.mul_(1.0 / args.meta_batch_size)
