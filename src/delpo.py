@@ -1,11 +1,13 @@
-from jsonargparse import ArgumentParser, ActionConfigFile
+import argparse
+import json
 
 #import numpy as np
 import tqdm
 from torch import nn, optim
 
-from src.zoo.delpo_utils import setup, inner_adapt_delpo
 from src.utils2 import Profiler
+from src.zoo.delpo_utils import inner_adapt_delpo, setup
+
 #import wandb
 
 #wandb.init(project="meta", entity='anujinho', config={})
@@ -14,8 +16,8 @@ from src.utils2 import Profiler
 # Parameters #
 ##############
 
-parser = ArgumentParser()
-parser.add_argument('--cnfg', type=ActionConfigFile)
+parser = argparse.ArgumentParser()
+parser.add_argument('--cnfg', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
 parser.add_argument('--n-ways', type=int)
@@ -38,6 +40,14 @@ parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
 
 args = parser.parse_args()
+with open(args.cfg) as f:
+    parser = argparse.ArgumentParser()
+    argparse_dict = vars(args)
+    argparse_dict.update(json.load(f))
+
+    args = argparse.Namespace()
+    args.__dict__.update(argparse_dict)
+
 
 # TODO: fix this bool/str shit
 
@@ -56,7 +66,7 @@ if args.klwt == 'True':
 elif args.klwt == 'False':
     args.klwt = False
 
-#wandb.config.update(args)
+# wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
 train_tasks, valid_tasks, test_tasks, learner = setup(
@@ -80,13 +90,13 @@ for iter in tqdm.tqdm(range(args.iterations)):
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()
         model = learner.clone()
-        if (iter%200==0) & (batch==0):
+        if (iter % 200 == 0) & (batch == 0):
             evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
         else:
             evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
-        
+
         evaluation_loss['elbo'].backward()
 
         # Logging per train-task losses and accuracies
@@ -99,17 +109,18 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
     # Logging train-task images and latents
     di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-    dl = {"label_latents": [mu_l, log_var_l], "style_latents": [mu_s, log_var_s]}
+    dl = {"label_latents": [mu_l, log_var_l],
+          "style_latents": [mu_s, log_var_s]}
     profiler.log_data(di, iter, 'train')
     profiler.log_data(dl, iter, 'train')
 
-    # rimages = wandb.Image(reconst_img, caption="Reconstructed Query Images")  
+    # rimages = wandb.Image(reconst_img, caption="Reconstructed Query Images")
     # qimages = wandb.Image(query_imgs, caption="Query Images")
     # wandb.log({"reconst_examples": rimages, "gt_examples": qimages})
 
     vtask = valid_tasks.sample()
     model = learner.clone()
-    if iter%200 == 0:
+    if iter % 200 == 0:
         validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
     else:
@@ -122,10 +133,11 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
     # wandb.log(dict({f"valid/{key}": loss.item() for _, (key, loss) in enumerate(validation_loss.items())},
     #           **{'valid/accuracies': validation_accuracy.item(), 'valid/task': iter}))
-    
+
     # Logging valid-task images and latents
     di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-    dl = {"label_latents": [mu_l, log_var_l], "style_latents": [mu_s, log_var_s]}
+    dl = {"label_latents": [mu_l, log_var_l],
+          "style_latents": [mu_s, log_var_s]}
     profiler.log_data(di, iter, 'valid')
     profiler.log_data(dl, iter, 'valid')
 
@@ -150,11 +162,10 @@ for i, tetask in enumerate(test_tasks):
     #tetask = test_tasks.sample()
     evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
         tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args)
-    
+
     # Logging per test-task losses and accuracies
     tmp = [iter, evaluation_accuracy.item()]
     tmp.append(a.item() for a in evaluation_loss.values())
     profiler.log_csv(tmp, 'test')
     # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
     #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
-

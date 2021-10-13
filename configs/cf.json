@@ -1,0 +1,5 @@
+{
+"inner_lr": 0.001,
+"download": "False",
+"device": "cuda"
+}
