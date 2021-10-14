@@ -105,6 +105,6 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
 
     if log_data:
-        return eval_loss, eval_acc, reconst_image, queries, mu_l, log_var_l, mu_s, log_var_s
+        return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu')
     else:
         return eval_loss, eval_acc

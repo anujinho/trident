@@ -93,11 +93,11 @@ for iter in tqdm.tqdm(range(args.iterations)):
         if (iter % 500 == 0) & (batch == 0):
             evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
-            
+
             # Logging train-task images and latents
-            di = {"reconst_examples": reconst_img.detach().to('cpu'), "gt_examples": query_imgs.detach().to('cpu')}
-            dl = {"label_latents": [mu_l.detach().to('cpu'), log_var_l.detach().to('cpu')],
-                  "style_latents": [mu_s.detach().to('cpu'), log_var_s.detach().to('cpu')]}
+            di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+            dl = {"label_latents": [mu_l, log_var_l],
+                  "style_latents": [mu_s, log_var_s]}
             profiler.log_data(di, iter, 'images', 'train')
             profiler.log_data(dl, iter, 'latents', 'train')
 
@@ -125,9 +125,9 @@ for iter in tqdm.tqdm(range(args.iterations)):
         validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
         # Logging valid-task images and latents
-        di = {"reconst_examples": reconst_img.detach().to('cpu'), "gt_examples": query_imgs.detach().to('cpu')}
-        dl = {"label_latents": [mu_l.detach().to('cpu'), log_var_l.detach().to('cpu')],
-            "style_latents": [mu_s.detach().to('cpu'), log_var_s.detach().to('cpu')]}
+        di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+        dl = {"label_latents": [mu_l, log_var_l],
+              "style_latents": [mu_s, log_var_s]}
         profiler.log_data(di, iter, 'images', 'valid')
         profiler.log_data(dl, iter, 'latents', 'valid')
 
@@ -155,6 +155,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
 ## Testing ##
 print('Testing on held out classes')
+del evaluation_loss, evaluation_accuracy, validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s
 
 for i, tetask in enumerate(test_tasks):
     # wandb.define_metric("accuracies", summary="max")
@@ -166,7 +167,7 @@ for i, tetask in enumerate(test_tasks):
         tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args)
 
     # Logging per test-task losses and accuracies
-    tmp = [iter, evaluation_accuracy.item()]
+    tmp = [i, evaluation_accuracy.item()]
     tmp = tmp + [a.item() for a in evaluation_loss.values()]
     profiler.log_csv(tmp, 'test')
     # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
