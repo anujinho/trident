@@ -37,6 +37,10 @@ class Profiler():
     def log_data(self, data, epoch, mode1, mode2):
         self.path_data = self.path + '/' + mode1 + '_epoch-' + str(epoch) + '_' + mode2 + '.pt'
         torch.save(data, self.path_data)
+    
+    def log_model(self, model):
+        self.path_model = self.path + '/' + 'model.pt'
+        torch.save(model, self.path_model)
 
 
 # /home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/

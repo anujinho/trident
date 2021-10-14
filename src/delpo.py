@@ -3,6 +3,7 @@ import json
 
 #import numpy as np
 import tqdm
+import torch
 from torch import nn, optim
 
 from src.utils2 import Profiler
@@ -151,7 +152,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
     profiler.log_csv(batch_losses, 'train')
     profiler.log_csv(tmp, 'valid')
 
-#torch.save(learner, f='../repro')
+profiler.log_model(learner)
 
 ## Testing ##
 print('Testing on held out classes')
