@@ -90,14 +90,14 @@ for iter in tqdm.tqdm(range(args.iterations)):
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()
         model = learner.clone()
-        if (iter % 200 == 0) & (batch == 0):
+        if (iter % 500 == 0) & (batch == 0):
             evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
             
             # Logging train-task images and latents
-            di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-            dl = {"label_latents": [mu_l, log_var_l],
-                  "style_latents": [mu_s, log_var_s]}
+            di = {"reconst_examples": reconst_img.detach().to('cpu'), "gt_examples": query_imgs.detach().to('cpu')}
+            dl = {"label_latents": [mu_l.detach().to('cpu'), log_var_l.detach().to('cpu')],
+                  "style_latents": [mu_s.detach().to('cpu'), log_var_s.detach().to('cpu')]}
             profiler.log_data(di, iter, 'images', 'train')
             profiler.log_data(dl, iter, 'latents', 'train')
 
@@ -109,7 +109,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
         # Logging per train-task losses and accuracies
         tmp = [(iter*args.meta_batch_size)+batch, evaluation_accuracy.item()]
-        tmp.append([a.item() for a in evaluation_loss.values()])
+        tmp = tmp + [a.item() for a in evaluation_loss.values()]
         batch_losses.append(tmp)
 
     #     wandb.log(dict({f"train/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
@@ -121,13 +121,13 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
     vtask = valid_tasks.sample()
     model = learner.clone()
-    if iter % 200 == 0:
+    if iter % 500 == 0:
         validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
         # Logging valid-task images and latents
-        di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-        dl = {"label_latents": [mu_l, log_var_l],
-            "style_latents": [mu_s, log_var_s]}
+        di = {"reconst_examples": reconst_img.detach().to('cpu'), "gt_examples": query_imgs.detach().to('cpu')}
+        dl = {"label_latents": [mu_l.detach().to('cpu'), log_var_l.detach().to('cpu')],
+            "style_latents": [mu_s.detach().to('cpu'), log_var_s.detach().to('cpu')]}
         profiler.log_data(di, iter, 'images', 'valid')
         profiler.log_data(dl, iter, 'latents', 'valid')
 
@@ -137,7 +137,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
     # Logging per validation-task losses and accuracies
     tmp = [iter, validation_accuracy.item()]
-    tmp.append(a.item() for a in validation_loss.values())
+    tmp = tmp + [a.item() for a in validation_loss.values()]
 
     # wandb.log(dict({f"valid/{key}": loss.item() for _, (key, loss) in enumerate(validation_loss.items())},
     #           **{'valid/accuracies': validation_accuracy.item(), 'valid/task': iter}))
@@ -167,7 +167,7 @@ for i, tetask in enumerate(test_tasks):
 
     # Logging per test-task losses and accuracies
     tmp = [iter, evaluation_accuracy.item()]
-    tmp.append(a.item() for a in evaluation_loss.values())
+    tmp = tmp + [a.item() for a in evaluation_loss.values()]
     profiler.log_csv(tmp, 'test')
     # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
     #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
