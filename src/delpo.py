@@ -152,7 +152,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
     profiler.log_csv(batch_losses, 'train')
     profiler.log_csv(tmp, 'valid')
 
-profiler.log_model(learner)
+profiler.log_model(learner.to('cpu'))
 
 ## Testing ##
 print('Testing on held out classes')
