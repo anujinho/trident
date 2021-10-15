@@ -156,7 +156,9 @@ profiler.log_model(learner.to('cpu'))
 
 ## Testing ##
 print('Testing on held out classes')
+# offloading unused tensors from the gpu
 del evaluation_loss, evaluation_accuracy, validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s
+learner.to(args.device)
 
 for i, tetask in enumerate(test_tasks):
     # wandb.define_metric("accuracies", summary="max")

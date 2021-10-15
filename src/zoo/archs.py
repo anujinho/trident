@@ -401,50 +401,50 @@ class CEncoder(nn.Module):
         if dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid, kernel_size=3,
-                        padding=1, stride=2),  # 28x28 => 16x16
+                          padding=1, stride=2),  # 28x28 => 16x16
                 act_fn(),
                 nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
                 act_fn(),
                 nn.Conv2d(c_hid, 2*c_hid, kernel_size=3,
-                        padding=1, stride=2),  # 16x16 => 8x8
+                          padding=1, stride=2),  # 16x16 => 8x8
                 act_fn(),
                 nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
                 act_fn(),
                 nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3,
-                        padding=1, stride=2),  # 8x8 => 4x4
+                          padding=1, stride=2),  # 8x8 => 4x4
                 act_fn(),
                 nn.Flatten(),  # Image grid to single feature vector
             )
             self.h1 = nn.Linear(2*16*c_hid, latent_dim)
             self.h2 = nn.Linear(2*16*c_hid, latent_dim)
 
-        elif dataset =='mini_imagenet':
+        elif dataset == 'mini_imagenet':
             self.net = nn.Sequential(
-            nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2), # 28 x 28, # 42 x 42
+                nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2), # 9x9 # 21 x 21
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2), #3x3 # 10 x 10
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2), #1x1 # 5 x 5
-            nn.Flatten()
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 1x1 # 5 x 5
+                nn.Flatten()
             )
-            self.h1 = nn.Linear(c_hid*25, latent_dim) # for maxpool(2)
+            self.h1 = nn.Linear(c_hid*25, latent_dim)  # for maxpool(2)
             self.h2 = nn.Linear(c_hid*25, latent_dim)
 
     def forward(self, x):
@@ -480,51 +480,55 @@ class CDecoder(nn.Module):
             )
             self.net = nn.Sequential(
                 nn.ConvTranspose2d(2*c_hid, 2*c_hid, kernel_size=3,
-                                padding=1, stride=2),  # 4x4 => 8x8
+                                   padding=1, stride=2),  # 4x4 => 8x8
                 act_fn(),
                 nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
                 act_fn(),
                 nn.ConvTranspose2d(2*c_hid, c_hid, kernel_size=3,
-                                output_padding=1, padding=1, stride=2),  # 8x8 => 16x16
+                                   output_padding=1, padding=1, stride=2),  # 8x8 => 16x16
                 act_fn(),
                 nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
                 act_fn(),
                 nn.ConvTranspose2d(c_hid, num_input_channels, kernel_size=3,
-                                output_padding=1, padding=1, stride=2),  # 16x16 => 32x32
+                                   output_padding=1, padding=1, stride=2),  # 16x16 => 32x32
                 nn.Sigmoid()  # The input image is scaled between 0 and 1, hence the output has to be bounded as well
             )
-        
+
         elif self.dataset == 'mini_imagenet':
             self.linear = nn.Sequential(
                 nn.Linear(latent_dim, 25*c_hid),
                 act_fn()
             )
             self.net = nn.Sequential(
-            # nn.UpsamplingNearest2d(size=(5, 5)),
-            # nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
-            # nn.BatchNorm2d(c_hid),
-            # act_fn(), 
+                # nn.UpsamplingNearest2d(size=(5, 5)),
+                # nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
+                # nn.BatchNorm2d(c_hid),
+                # act_fn(),
 
-            nn.UpsamplingNearest2d(size=(10, 10)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(), 
+                nn.UpsamplingNearest2d(size=(10, 10)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
 
-            nn.UpsamplingNearest2d(size=(21, 21)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
+                nn.UpsamplingNearest2d(size=(21, 21)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
 
-            nn.UpsamplingNearest2d(size=(42, 42)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid, kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
+                nn.UpsamplingNearest2d(size=(42, 42)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
 
-            nn.UpsamplingNearest2d(size=(84, 84)),
-            nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels, kernel_size=3, padding='same'),
-            nn.BatchNorm2d(num_input_channels),
-            nn.Sigmoid()
-        )
+                nn.UpsamplingNearest2d(size=(84, 84)),
+                nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(num_input_channels),
+                nn.Sigmoid()
+            )
 
     def forward(self, x):
         if self.dataset == 'omniglot':
@@ -570,24 +574,26 @@ class CVAE(nn.Module):
         x = self.decoder(torch.cat([z, y], dim=1))
         return x, mu, log_var
 
+
 class Classifier_VAE(nn.Module):
     """ Module for a Convolutional-VAE: Convolutional Encoder + Linear Classifier that 
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
-    from this distribution to produce logits for classification. """    
+    from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, reparametrize=False, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
         self.latent_dim = latent_dim
         self.classes = n_ways
+        self.reparameterize = reparametrize
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
-
+        
         self.classifier = nn.Sequential(
-            nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
-            nn.Linear(self.latent_dim//2, self.classes))
+        nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
+        nn.Linear(self.latent_dim//2, self.classes))        
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -599,7 +605,10 @@ class Classifier_VAE(nn.Module):
 
     def forward(self, x):
         mu, log_var = self.encoder(x)
-        z = self.reparameterize(mu, log_var)
+        if self.reparametrize:
+            z = self.reparameterize(mu, log_var)
+        else:
+            z = mu
         logits = self.classifier(z)
         return logits, mu, log_var
 
@@ -608,7 +617,7 @@ class CCVAE(nn.Module):
     """ Module for a Conditional-Convolutional VAE: Classifier-VAE + Convolutional Encoder-Decoder. 
     The Conv. Encoder-Decoder is conditioned on the z_l drawn from the class-latent gaussian distribution 
     for reconstructing the input image. """
-    
+
     def __init__(self, in_channels, base_channels, n_ways, dataset, latent_dim_l=64, latent_dim_s=64):
         super(CCVAE, self).__init__()
         self.in_channels = in_channels
@@ -624,7 +633,8 @@ class CCVAE(nn.Module):
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
-        self.classifier_vae = Classifier_VAE(self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset)
+        self.classifier_vae = Classifier_VAE(
+            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset)
 
     def reparameterize(self, mu, logvar):
         if self.training:
