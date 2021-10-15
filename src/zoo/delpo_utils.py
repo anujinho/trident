@@ -11,7 +11,7 @@ from torchvision import transforms
 from src.zoo.archs import CCVAE
 
 
-def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download):
+def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, repar):
     if dataset == 'omniglot':
         image_trans = transforms.Compose([transforms.Resize(
             28, interpolation=LANCZOS), transforms.ToTensor(), lambda x: 1-x])
@@ -36,7 +36,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = CCVAE(in_channels=3, base_channels=32,
-                        n_ways=n_ways, dataset='mini_imagenet')
+                        n_ways=n_ways, dataset='mini_imagenet', reparametrize=repar)
 
     learner = learner.to(device)
     learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr)

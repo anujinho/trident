@@ -618,7 +618,7 @@ class CCVAE(nn.Module):
     The Conv. Encoder-Decoder is conditioned on the z_l drawn from the class-latent gaussian distribution 
     for reconstructing the input image. """
 
-    def __init__(self, in_channels, base_channels, n_ways, dataset, latent_dim_l=64, latent_dim_s=64):
+    def __init__(self, in_channels, base_channels, n_ways, dataset, repar, latent_dim_l=64, latent_dim_s=64):
         super(CCVAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -634,7 +634,7 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset)
+            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, reparametrize=repar)
 
     def reparameterize(self, mu, logvar):
         if self.training:

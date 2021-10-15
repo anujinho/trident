@@ -39,6 +39,7 @@ parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
+parser.add_argument('--repar', type=str)
 
 args = parser.parse_args()
 with open(args.cnfg) as f:
@@ -67,11 +68,16 @@ if args.klwt == 'True':
 elif args.klwt == 'False':
     args.klwt = False
 
+if args.repar == 'True':
+    args.repar = True
+elif args.repar == 'False':
+    args.repar = False
+
 # wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
 train_tasks, valid_tasks, test_tasks, learner = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, repar=args.repar)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 reconst_loss = nn.MSELoss(reduction='none')
 if args.order == False:
