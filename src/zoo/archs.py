@@ -580,7 +580,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, reparametrize=False, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, reparametrize=True, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
