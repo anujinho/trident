@@ -634,7 +634,7 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, reparametrize=repar)
+            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, repar=repar)
 
     def reparameterize(self, mu, logvar):
         if self.training:
