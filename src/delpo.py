@@ -39,7 +39,7 @@ parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
-parser.add_argument('--repar', type=str)
+parser.add_argument('--repar', type=str, default=True)
 
 args = parser.parse_args()
 with open(args.cnfg) as f:
@@ -158,7 +158,12 @@ for iter in tqdm.tqdm(range(args.iterations)):
     profiler.log_csv(batch_losses, 'train')
     profiler.log_csv(tmp, 'valid')
 
-profiler.log_model(learner.to('cpu'))
+    # Checkpointing the learner
+    if iter % 5000:
+        profiler.log_model(learner.to('cpu'))
+        learner.to(args.device)
+    else:
+        continue
 
 ## Testing ##
 print('Testing on held out classes')
