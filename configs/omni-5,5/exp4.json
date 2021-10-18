@@ -8,7 +8,7 @@
 "inner_adapt_steps_test": 5,
 "inner_lr": 0.01,
 "meta_lr": 0.001,
-"meta_batch_size": 30,
+"meta_batch_size": 10,
 "iterations": 3500,
 "wt_ce": 10,
 "klwt": "False",
