@@ -78,7 +78,8 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
 
 def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args):
     data, labels = task
-    data, labels = data.to(device) / 255.0, labels.to(device)
+    if args.dataset == 'miniimagenet': data, labels = data.to(device) / 255.0, labels.to(device)
+    elif args.dataset == 'omniglot': data, labels = data.to(device), labels.to(device)
     total = n_ways * (k_shots + q_shots)
     queries_index = np.zeros(total)
 
