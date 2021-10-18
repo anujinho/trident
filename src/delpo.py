@@ -160,7 +160,7 @@ for iter in tqdm.tqdm(range(args.iterations)):
 
     # Checkpointing the learner
     if iter % 5000:
-        profiler.log_model(learner.to('cpu'))
+        profiler.log_model(learner.to('cpu'), opt)
         learner.to(args.device)
     else:
         continue
