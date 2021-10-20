@@ -400,7 +400,22 @@ class CEncoder(nn.Module):
         c_hid = base_channel_size
         if dataset == 'omniglot':
             self.net = nn.Sequential(
-                ConvBase(num_input_channels, c_hid, 4, False, (2,2)),
+                nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1, stride=(2,2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 14
+
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1, stride=(2,2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 7
+
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1, stride=(2,2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 4
+
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1, stride=(2,2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 2
+                
                 nn.Flatten()
             )
             self.h1 = nn.Linear(4*c_hid, latent_dim)
