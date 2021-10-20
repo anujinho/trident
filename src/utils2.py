@@ -40,7 +40,7 @@ class Profiler():
     
     def log_model(self, model, opt):
         self.path_model = self.path + '/' + 'model.pt'
-        self.path_model = self.path + '/' + 'opt.pt'
+        self.path_opt = self.path + '/' + 'opt.pt'
         torch.save(model, self.path_model)
         torch.save(opt.state_dict(), self.path_opt)
 

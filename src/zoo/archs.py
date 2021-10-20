@@ -400,23 +400,11 @@ class CEncoder(nn.Module):
         c_hid = base_channel_size
         if dataset == 'omniglot':
             self.net = nn.Sequential(
-                nn.Conv2d(num_input_channels, c_hid, kernel_size=3,
-                          padding=1, stride=2),  # 28x28 => 16x16
-                act_fn(),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                act_fn(),
-                nn.Conv2d(c_hid, 2*c_hid, kernel_size=3,
-                          padding=1, stride=2),  # 16x16 => 8x8
-                act_fn(),
-                nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
-                act_fn(),
-                nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3,
-                          padding=1, stride=2),  # 8x8 => 4x4
-                act_fn(),
-                nn.Flatten(),  # Image grid to single feature vector
+                ConvBase(num_input_channels, c_hid, 4, False, (2,2)),
+                nn.Flatten()
             )
-            self.h1 = nn.Linear(2*16*c_hid, latent_dim)
-            self.h2 = nn.Linear(2*16*c_hid, latent_dim)
+            self.h1 = nn.Linear(4*c_hid, latent_dim)
+            self.h2 = nn.Linear(4*c_hid, latent_dim)
 
         elif dataset == 'mini_imagenet':
             self.net = nn.Sequential(
@@ -475,23 +463,33 @@ class CDecoder(nn.Module):
         self.dataset = dataset
         if self.dataset == 'omniglot':
             self.linear = nn.Sequential(
-                nn.Linear(latent_dim, 2*16*c_hid),
+                nn.Linear(latent_dim, 4*c_hid),
                 act_fn()
             )
             self.net = nn.Sequential(
-                nn.ConvTranspose2d(2*c_hid, 2*c_hid, kernel_size=3,
-                                   padding=1, stride=2),  # 4x4 => 8x8
+                nn.UpsamplingNearest2d(size=(4, 4)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
                 act_fn(),
-                nn.Conv2d(2*c_hid, 2*c_hid, kernel_size=3, padding=1),
+
+                nn.UpsamplingNearest2d(size=(7, 7)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
                 act_fn(),
-                nn.ConvTranspose2d(2*c_hid, c_hid, kernel_size=3,
-                                   output_padding=1, padding=1, stride=2),  # 8x8 => 16x16
+
+                nn.UpsamplingNearest2d(size=(14, 14)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
                 act_fn(),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                act_fn(),
-                nn.ConvTranspose2d(c_hid, num_input_channels, kernel_size=3,
-                                   output_padding=1, padding=1, stride=2),  # 16x16 => 32x32
-                nn.Sigmoid()  # The input image is scaled between 0 and 1, hence the output has to be bounded as well
+
+                nn.UpsamplingNearest2d(size=(28, 28)),
+                nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(num_input_channels),
+                nn.Sigmoid() 
             )
 
         elif self.dataset == 'mini_imagenet':
@@ -533,7 +531,7 @@ class CDecoder(nn.Module):
     def forward(self, x):
         if self.dataset == 'omniglot':
             x = self.linear(x)
-            x = x.reshape(x.shape[0], -1, 4, 4)
+            x = x.reshape(x.shape[0], -1, 2, 2)
         elif self.dataset == 'mini_imagenet':
             #x = x.unsqueeze(-1).unsqueeze(-1)
             x = self.linear(x)
