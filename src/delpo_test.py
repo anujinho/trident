@@ -85,7 +85,8 @@ elif args.order == True:
 
 ## Testing ##
 
-learner = torch.load('/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs//DELPO_miniimagenet_5-way_5-shot_15-queries/{}/model.pt'.format(args.experiment))
+learner = torch.load('/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/DELPO_{}_{}-way_{}-shot_{}-queries/{}/model.pt'.format(
+    args.dataset, args.n_ways, args.k_shots, args.q_shots, args.experiment))
 learner.to(args.device)
 print('Testing on held out classes')
 
