@@ -40,6 +40,9 @@ parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
 parser.add_argument('--repar', type=str, default=True)
+parser.add_argument('--resume', type=str)
+parser.add_argument('--iter-resume', type=int)
+
 
 args = parser.parse_args()
 with open(args.cnfg) as f:
@@ -80,6 +83,17 @@ train_tasks, valid_tasks, test_tasks, learner = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, repar=args.repar)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 reconst_loss = nn.MSELoss(reduction='none')
+
+if args.resume == 'Yes':
+    learner = learner.to('cpu')
+    learner = torch.load('../logs/model_{}.pt'.format(args.iter_resume))
+    learner = learner.to(args.device)
+    opt.load_state_dict(torch.load('../logs/opt_{}.pt'.format(args.iter_resume)))
+    start = args.iter_resume
+
+else:
+    start = 0
+
 if args.order == False:
     profiler = Profiler('DELPO_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
                         args.n_ways, args.k_shots, args.q_shots), args.experiment)
@@ -90,7 +104,7 @@ elif args.order == True:
 
 
 ## Training ##
-for iter in tqdm.tqdm(range(args.iterations)):
+for iter in tqdm.tqdm(range(start, args.iterations)):
     opt.zero_grad()
     batch_losses = []
 
@@ -159,9 +173,10 @@ for iter in tqdm.tqdm(range(args.iterations)):
     profiler.log_csv(tmp, 'valid')
 
     # Checkpointing the learner
-    if iter % 1000:
-        profiler.log_model(learner.to('cpu'), opt, iter)
-        learner.to(args.device)
+    if iter % 1000 == 0:
+        learner = learner.to('cpu')
+        profiler.log_model(learner, opt, iter)
+        learner = learner.to(args.device)
     else:
         continue
 
