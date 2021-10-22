@@ -1,3 +1,4 @@
+import os
 import argparse
 import json
 
@@ -86,9 +87,9 @@ reconst_loss = nn.MSELoss(reduction='none')
 
 if args.resume == 'Yes':
     learner = learner.to('cpu')
-    learner = torch.load('../logs/model_{}.pt'.format(args.iter_resume))
+    learner = torch.load('{}/logs/model_{}.pt'.format(os.path.realpath('..'), args.iter_resume))
     learner = learner.to(args.device)
-    opt.load_state_dict(torch.load('../logs/opt_{}.pt'.format(args.iter_resume)))
+    opt.load_state_dict(torch.load('{}/logs/opt_{}.pt'.format(os.path.realpath('..'), args.iter_resume)))
     start = args.iter_resume
 
 else:
