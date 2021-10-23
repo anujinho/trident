@@ -87,9 +87,9 @@ reconst_loss = nn.MSELoss(reduction='none')
 
 if args.resume == 'Yes':
     learner = learner.to('cpu')
-    learner = torch.load('/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/model_{}.pt'.format(args.iter_resume))
+    learner = torch.load('/home/nfs/anujsingh/meta_lrng/files/temp/learning_to_meta-learn/logs/model_{}.pt'.format(args.iter_resume))
     learner = learner.to(args.device)
-    opt.load_state_dict(torch.load('/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/opt_{}.pt'.format(args.iter_resume)))
+    opt.load_state_dict(torch.load('/home/nfs/anujsingh/meta_lrng/files/temp/learning_to_meta-learn/logs/opt_{}.pt'.format(args.iter_resume)))
     start = args.iter_resume
 
 else:
@@ -174,7 +174,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     profiler.log_csv(tmp, 'valid')
 
     # Checkpointing the learner
-    if iter % 1000 == 0:
+    if iter % 500 == 0:
         learner = learner.to('cpu')
         profiler.log_model(learner, opt, iter)
         learner = learner.to(args.device)
