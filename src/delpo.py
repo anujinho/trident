@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--cnfg', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
+parser.add_argument('--model-path', type=str)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
@@ -87,9 +88,9 @@ reconst_loss = nn.MSELoss(reduction='none')
 
 if args.resume == 'Yes':
     learner = learner.to('cpu')
-    learner = torch.load('/home/nfs/anujsingh/meta_lrng/files/temp/learning_to_meta-learn/logs/model_{}.pt'.format(args.iter_resume))
+    learner = torch.load('{}/model_{}.pt'.format(args.model_path, args.iter_resume))
     learner = learner.to(args.device)
-    opt.load_state_dict(torch.load('/home/nfs/anujsingh/meta_lrng/files/temp/learning_to_meta-learn/logs/opt_{}.pt'.format(args.iter_resume)))
+    opt.load_state_dict(torch.load('{}/opt_{}.pt'.format(args.model_path, args.iter_resume)))
     start = args.iter_resume
 
 else:

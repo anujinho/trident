@@ -1,6 +1,7 @@
 {
 "dataset": "miniimagenet",
 "root": "../dataset/mini_imagenet",
+"model_path": "",
 "n_ways": 5,
 "k_shots": 5,
 "q_shots": 15,
@@ -18,5 +19,7 @@
 "experiment": "exp7",
 "order": "False",
 "device": "cuda",
-"repar": "True"
+"repar": "True",
+"resume": "Yes",
+"iter_resume": 4494
 }

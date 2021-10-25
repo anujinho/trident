@@ -1,3 +1,4 @@
+import os
 import argparse
 import json
 from torch._C import device
@@ -5,7 +6,7 @@ from torch._C import device
 #import numpy as np
 import tqdm
 import torch
-from torch import nn, optim
+from torch import nn
 
 from src.utils2 import Profiler
 from src.zoo.delpo_utils import inner_adapt_delpo, setup
@@ -22,6 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--cnfg', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
+parser.add_argument('--model-path', type=str)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
@@ -40,6 +42,9 @@ parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
+parser.add_argument('--repar', type=str, default=True)
+parser.add_argument('--resume', type=str)
+parser.add_argument('--iter-resume', type=int)
 
 args = parser.parse_args()
 with open(args.cnfg) as f:
@@ -85,23 +90,23 @@ elif args.order == True:
 
 ## Testing ##
 
-learner = torch.load('/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/DELPO_{}_{}-way_{}-shot_{}-queries/{}/model.pt'.format(
-    args.dataset, args.n_ways, args.k_shots, args.q_shots, args.experiment))
-learner.to(args.device)
-print('Testing on held out classes')
+for model_name in os.listdir(args.model_path):
+    learner = torch.load('{}/{}.pt'.format(args.model_path, model_name))
+    learner = learner.to(args.device)
+    print('Testing on held out classes')
 
-for i, tetask in enumerate(test_tasks):
-    # wandb.define_metric("accuracies", summary="max")
-    # wandb.define_metric("accuracies", summary="mean")
+    for i, tetask in enumerate(test_tasks):
+        # wandb.define_metric("accuracies", summary="max")
+        # wandb.define_metric("accuracies", summary="mean")
 
-    model = learner.clone()
-    #tetask = test_tasks.sample()
-    evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
-        tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args)
+        model = learner.clone()
+        #tetask = test_tasks.sample()
+        evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
+            tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args)
 
-    # Logging per test-task losses and accuracies
-    tmp = [i, evaluation_accuracy.item()]
-    tmp = tmp + [a.item() for a in evaluation_loss.values()]
-    profiler.log_csv(tmp, 'test')
-    # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
-    #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
+        # Logging per test-task losses and accuracies
+        tmp = [i, evaluation_accuracy.item()]
+        tmp = tmp + [a.item() for a in evaluation_loss.values()]
+        profiler.log_csv(tmp, 'test')
+        # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
+        #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
