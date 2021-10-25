@@ -182,6 +182,8 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     else:
         continue
 
+profiler.log_model(learner, opt, 'last')
+
 ## Testing ##
 print('Testing on held out classes')
 # offloading unused tensors from the gpu
