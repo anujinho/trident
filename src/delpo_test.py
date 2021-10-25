@@ -107,6 +107,7 @@ for model_name in os.listdir(args.model_path):
         # Logging per test-task losses and accuracies
         tmp = [i, evaluation_accuracy.item()]
         tmp = tmp + [a.item() for a in evaluation_loss.values()]
+        tmp = tmp + [model_name]
         profiler.log_csv(tmp, 'test')
         # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
         #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
