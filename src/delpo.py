@@ -183,6 +183,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         continue
 
 profiler.log_model(learner, opt, 'last')
+profiler.log_model(learner, opt, iter)
 
 ## Testing ##
 print('Testing on held out classes')
