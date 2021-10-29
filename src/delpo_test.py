@@ -35,6 +35,7 @@ parser.add_argument('--klwt', type=str)
 parser.add_argument('--rec-wt', type=float)
 parser.add_argument('--beta-l', type=float)
 parser.add_argument('--beta-s', type=float)
+parser.add_argument('--task_adapt', type=str)
 parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
@@ -72,7 +73,7 @@ elif args.klwt == 'False':
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
 train_tasks, valid_tasks, test_tasks, _ = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, repar=True)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt)
 reconst_loss = nn.MSELoss(reduction='none')
 if args.order == False:
     profiler = Profiler('DELPO_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,

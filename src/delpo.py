@@ -37,11 +37,11 @@ parser.add_argument('--klwt', type=str)
 parser.add_argument('--rec-wt', type=float)
 parser.add_argument('--beta-l', type=float)
 parser.add_argument('--beta-s', type=float)
+parser.add_argument('--task-adapt', type=str)
 parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
-parser.add_argument('--repar', type=str, default=True)
 parser.add_argument('--resume', type=str)
 parser.add_argument('--iter-resume', type=int)
 
@@ -73,16 +73,16 @@ if args.klwt == 'True':
 elif args.klwt == 'False':
     args.klwt = False
 
-if args.repar == 'True':
-    args.repar = True
-elif args.repar == 'False':
-    args.repar = False
+if args.task_adapt == 'True':
+    args.task_adapt = True
+elif args.task_adapt == 'False':
+    args.task_adapt = False
 
 # wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
 train_tasks, valid_tasks, test_tasks, learner = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, repar=args.repar)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 reconst_loss = nn.MSELoss(reduction='none')
 
@@ -91,7 +91,7 @@ if args.resume == 'Yes':
     learner = torch.load('{}/model_{}.pt'.format(args.model_path, args.iter_resume))
     learner = learner.to(args.device)
     opt.load_state_dict(torch.load('{}/opt_{}.pt'.format(args.model_path, args.iter_resume)))
-    start = args.iter_resume
+    start = args.iter_resume + 1
 
 else:
     start = 0
