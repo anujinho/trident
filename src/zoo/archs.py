@@ -709,7 +709,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, task_adapt, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, task_adapt, args, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -719,7 +719,7 @@ class Classifier_VAE(nn.Module):
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
         else: 
             self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
@@ -751,7 +751,7 @@ class CCVAE(nn.Module):
     The Conv. Encoder-Decoder is conditioned on the z_l drawn from the class-latent gaussian distribution 
     for reconstructing the input image. """
 
-    def __init__(self, in_channels, base_channels, n_ways, dataset, task_adapt, latent_dim_l=64, latent_dim_s=64):
+    def __init__(self, in_channels, base_channels, n_ways, dataset, task_adapt, args, latent_dim_l=64, latent_dim_s=64):
         super(CCVAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -768,7 +768,7 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt)
+            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, args=args)
 
     def reparameterize(self, mu, logvar):
         if self.training:
