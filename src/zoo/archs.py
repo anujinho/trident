@@ -566,7 +566,7 @@ class TADCEncoder(nn.Module):
             x = x[:self.args.n_ways*self.args.k_shots] * G
         elif update == 'outer':
             x = x[self.args.n_ways*self.args.k_shots:] * G
-        x = nn.Flatten(x)
+        x = nn.Flatten()(x)
         
         mu = self.h1(x)
         log_var = self.h2(x)
