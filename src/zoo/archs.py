@@ -542,7 +542,7 @@ class TADCEncoder(nn.Module):
         
         self.n = args.n_ways * (args.k_shots + args.q_shots)
         self.eaen = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(n,1), stride=(1,1), padding='valid', bias=False),
+            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(self.n,1), stride=(1,1), padding='valid', bias=False),
             act_fn(),                                                                                                # P
             
             nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),

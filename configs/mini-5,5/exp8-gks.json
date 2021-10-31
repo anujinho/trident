@@ -18,7 +18,7 @@
 "beta_s": 1,
 "task_adapt": "True",
 "task_adapt_fn": "gks",
-"experiment": "exp8",
+"experiment": "exp8-gks",
 "order": "False",
 "device": "cuda",
 "resume": "No",

@@ -18,7 +18,7 @@
 "beta_s": 1,
 "task_adapt": "True",
 "task_adapt_fn": "eaen",
-"experiment": "exp8",
+"experiment": "exp8-eaen",
 "order": "False",
 "device": "cuda",
 "resume": "No",
