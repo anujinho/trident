@@ -38,6 +38,7 @@ parser.add_argument('--rec-wt', type=float)
 parser.add_argument('--beta-l', type=float)
 parser.add_argument('--beta-s', type=float)
 parser.add_argument('--task-adapt', type=str)
+parser.add_argument('--task-adapt-fn', type=str)
 parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
@@ -82,7 +83,7 @@ elif args.task_adapt == 'False':
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
 train_tasks, valid_tasks, test_tasks, learner = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, args=args)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, task_adapt_fn=args.task_adapt_fn, args=args)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 reconst_loss = nn.MSELoss(reduction='none')
 

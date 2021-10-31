@@ -470,7 +470,7 @@ class TADCEncoder(nn.Module):
                  base_channel_size: int,
                  latent_dim: int,
                  dataset: str,
-                 #task_adapt_fn: str,
+                 task_adapt_fn: str,
                  args,
                  act_fn: object = nn.ReLU):
         """
@@ -485,6 +485,7 @@ class TADCEncoder(nn.Module):
         """
 
         self.args = args
+        self.task_adapt_fn = task_adapt_fn
 
         super(TADCEncoder, self).__init__()
         c_hid = base_channel_size
@@ -539,7 +540,7 @@ class TADCEncoder(nn.Module):
                 nn.MaxPool2d(2)  # 1x1 # 5 x 5
             )
         
-        n = args.n_ways * (args.k_shots + args.q_shots)
+        self.n = args.n_ways * (args.k_shots + args.q_shots)
         self.eaen = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(n,1), stride=(1,1), padding='valid', bias=False),
             act_fn(),                                                                                                # P
@@ -558,16 +559,31 @@ class TADCEncoder(nn.Module):
         x = self.net(x)
 
         # Task aware embeddings
-        G = x.permute(2,3,0,1)
-        G = G.reshape(G.shape[0] * G.shape[1], G.shape[2], G.shape[3]).unsqueeze(dim=1)
-        G = self.eaen(G)
-        G = G.squeeze().transpose(0,1).reshape(-1, x.shape[2], x.shape[3])
-        if update == 'inner':
-            x = x[:self.args.n_ways*self.args.k_shots] * G
-        elif update == 'outer':
-            x = x[self.args.n_ways*self.args.k_shots:] * G
-        x = nn.Flatten()(x)
         
+        if self.task_adapt_fn == 'eaen':
+            G = x.permute(2,3,0,1)
+            G = G.reshape(G.shape[0] * G.shape[1], G.shape[2], G.shape[3]).unsqueeze(dim=1)
+            G = self.eaen(G)
+            G = G.squeeze().transpose(0,1).reshape(-1, x.shape[2], x.shape[3])
+            if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots] * G
+            elif update == 'outer':
+                x = x[self.args.n_ways*self.args.k_shots:] * G
+            x = nn.Flatten()(x)
+        
+        elif self.task_adapt_fn == 'gks':
+            G = x.reshape(self.n, -1)
+            A = torch.cdist(G, G, p=2) ** 2
+            A = A / A.var() # Normalized adjacency matrix
+            D = torch.diag(A.sum(dim=1).pow(-0.5))
+            L = torch.matmul(torch.matmul(D, A), D) # Laplacian Matrix
+            P = torch.linalg.inv(torch.eye(self.n, self.n) - self.alpha * L) # Propagator Matrix
+            x = torch.matmul(P, G)
+            if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots]
+            elif update == 'outer':
+                x = x[self.args.n_ways*self.args.k_shots:]
+
         mu = self.h1(x)
         log_var = self.h2(x)
         return mu, log_var
@@ -709,17 +725,18 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, task_adapt, args, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, task_adapt, task_adapt_fn, args, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
         self.latent_dim = latent_dim
         self.classes = n_ways
         self.task_adapt = task_adapt
+        self.task_adapt_fn = task_adapt_fn
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else: 
             self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
@@ -751,7 +768,7 @@ class CCVAE(nn.Module):
     The Conv. Encoder-Decoder is conditioned on the z_l drawn from the class-latent gaussian distribution 
     for reconstructing the input image. """
 
-    def __init__(self, in_channels, base_channels, n_ways, dataset, task_adapt, args, latent_dim_l=64, latent_dim_s=64):
+    def __init__(self, in_channels, base_channels, n_ways, dataset, task_adapt, task_adapt_fn, args, latent_dim_l=64, latent_dim_s=64):
         super(CCVAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -760,6 +777,7 @@ class CCVAE(nn.Module):
         self.latent_dim_s = latent_dim_s
         self.classes = n_ways
         self.task_adapt = task_adapt
+        self.task_adapt_fn = task_adapt_fn
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset)
@@ -768,7 +786,7 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, args=args)
+            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -780,9 +798,9 @@ class CCVAE(nn.Module):
 
     def forward(self, x, update):
         logits, mu_l, log_var_l = self.classifier_vae(x, update)
-        if self.task_adapt & update == 'inner':
+        if self.task_adapt & (update == 'inner'):
             x = x[:self.args.n_ways*self.args.k_shots]
-        elif self.task_adapt & self.update == 'outer':
+        elif self.task_adapt & (self.update == 'outer'):
             x = x[self.args.n_ways*self.args.k_shots:]
         else:
             x = x

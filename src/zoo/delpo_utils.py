@@ -11,7 +11,7 @@ from torchvision import transforms
 from src.zoo.archs import CCVAE
 
 
-def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, task_adapt, args):
+def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, task_adapt, task_adapt_fn, args):
     if dataset == 'omniglot':
         image_trans = transforms.Compose([transforms.Resize(
             28, interpolation=LANCZOS), transforms.ToTensor(), lambda x: 1-x])
@@ -25,7 +25,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[1200:], num_tasks=600)
         learner = CCVAE(in_channels=1, base_channels=64,
-                        n_ways=n_ways, dataset='omniglot', task_adapt=task_adapt, args=args)
+                        n_ways=n_ways, dataset='omniglot', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
     elif dataset == 'miniimagenet':
         # Generating tasks and model according to the MAML implementation for MiniImageNet
@@ -36,7 +36,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = CCVAE(in_channels=3, base_channels=32,
-                        n_ways=n_ways, dataset='mini_imagenet', task_adapt=task_adapt, args=args)
+                        n_ways=n_ways, dataset='mini_imagenet', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
     learner = learner.to(device)
     learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr)
