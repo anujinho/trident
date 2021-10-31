@@ -778,6 +778,7 @@ class CCVAE(nn.Module):
         self.classes = n_ways
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
+        self.args = args
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset)
@@ -786,7 +787,7 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
+            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=self.args)
 
     def reparameterize(self, mu, logvar):
         if self.training:
