@@ -577,7 +577,7 @@ class TADCEncoder(nn.Module):
             A = A / A.var() # Normalized adjacency matrix
             D = torch.diag(A.sum(dim=1).pow(-0.5))
             L = torch.matmul(torch.matmul(D, A), D) # Laplacian Matrix
-            P = torch.linalg.inv(torch.eye(self.n, self.n) - self.alpha * L) # Propagator Matrix
+            P = torch.linalg.inv(torch.eye(self.n, self.n) - self.args.alpha * L) # Propagator Matrix
             x = torch.matmul(P, G)
             if update == 'inner':
                 x = x[:self.args.n_ways*self.args.k_shots]

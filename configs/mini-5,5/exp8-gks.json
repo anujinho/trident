@@ -18,6 +18,7 @@
 "beta_s": 1,
 "task_adapt": "True",
 "task_adapt_fn": "gks",
+"alpha": 0.1,
 "experiment": "exp8-gks",
 "order": "False",
 "device": "cuda",
