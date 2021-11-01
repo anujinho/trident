@@ -552,8 +552,8 @@ class TADCEncoder(nn.Module):
             act_fn(),                                                                                                # F
         )
 
-        self.h1 = nn.Linear(c_hid*25, latent_dim) 
-        self.h2 = nn.Linear(c_hid*25, latent_dim)
+        self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), (c_hid*25//2, latent_dim))  # Trying this small change out
+        self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), (c_hid*25//2, latent_dim))
 
     def forward(self, x, update:str):
         x = self.net(x)
