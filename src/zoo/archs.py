@@ -801,7 +801,7 @@ class CCVAE(nn.Module):
         logits, mu_l, log_var_l = self.classifier_vae(x, update)
         if self.task_adapt & (update == 'inner'):
             x = x[:self.args.n_ways*self.args.k_shots]
-        elif self.task_adapt & (self.update == 'outer'):
+        elif self.task_adapt & (update == 'outer'):
             x = x[self.args.n_ways*self.args.k_shots:]
         else:
             x = x
