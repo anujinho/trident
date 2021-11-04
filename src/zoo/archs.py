@@ -451,8 +451,11 @@ class CEncoder(nn.Module):
                 nn.MaxPool2d(2),  # 1x1 # 5 x 5
                 nn.Flatten()
             )
-            self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
-            self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
+            self.h1 = nn.Linear(c_hid*25, latent_dim)
+            self.h2 = nn.Linear(c_hid*25, latent_dim)
+            
+            # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
+            # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 
     def forward(self, x):
         x = self.net(x)
@@ -577,7 +580,8 @@ class TADCEncoder(nn.Module):
             A = A / A.var() # Normalized adjacency matrix
             D = torch.diag(A.sum(dim=1).pow(-0.5))
             L = torch.matmul(torch.matmul(D, A), D) # Laplacian Matrix
-            P = torch.linalg.inv(torch.eye(self.n, self.n).to(self.args.device) - self.args.alpha * L) # Propagator Matrix
+            I = torch.eye(self.n, self.n).to(self.args.device)
+            P = torch.linalg.inv(I - self.args.alpha * L) # Propagator Matrix
             x = torch.matmul(P, G)
             if update == 'inner':
                 x = x[:self.args.n_ways*self.args.k_shots]

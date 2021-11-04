@@ -69,11 +69,17 @@ if args.klwt == 'True':
 elif args.klwt == 'False':
     args.klwt = False
 
+if args.task_adapt == 'True':
+    args.task_adapt = True
+elif args.task_adapt == 'False':
+    args.task_adapt = False
+
+
 # wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
 train_tasks, valid_tasks, test_tasks, _ = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, args=args)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, task_adapt_fn=args.task_adapt_fn, args=args)
 reconst_loss = nn.MSELoss(reduction='none')
 if args.order == False:
     profiler = Profiler('DELPO_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
