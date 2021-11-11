@@ -425,7 +425,7 @@ class CEncoder(nn.Module):
             self.h1 = nn.Linear(4*c_hid, latent_dim)
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
-        elif dataset == 'mini_imagenet':
+        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs'):
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
                 nn.BatchNorm2d(c_hid),
@@ -451,9 +451,13 @@ class CEncoder(nn.Module):
                 nn.MaxPool2d(2),  # 1x1 # 5 x 5
                 nn.Flatten()
             )
-            self.h1 = nn.Linear(c_hid*25, latent_dim)
-            self.h2 = nn.Linear(c_hid*25, latent_dim)
-            
+            if dataset == 'mini_imagenet':
+                self.h1 = nn.Linear(c_hid*25, latent_dim)
+                self.h2 = nn.Linear(c_hid*25, latent_dim)
+            elif dataset == 'cifarfs':
+                self.h1 = nn.Linear(c_hid*4, latent_dim)
+                self.h2 = nn.Linear(c_hid*4, latent_dim)
+                
             # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 
@@ -517,7 +521,7 @@ class TADCEncoder(nn.Module):
             self.h1 = nn.Linear(4*c_hid, latent_dim)
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
-        elif dataset == 'mini_imagenet':
+        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs'):
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
                 nn.BatchNorm2d(c_hid),
@@ -542,6 +546,14 @@ class TADCEncoder(nn.Module):
                 act_fn(),
                 nn.MaxPool2d(2)  # 1x1 # 5 x 5
             )
+            
+            if dataset == 'mini_imagenet':
+                self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                self.h2 = nn.Linear(c_hid*25, latent_dim)
+            elif dataset == 'cifarfs':
+                self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                self.h2 = nn.Linear(c_hid*4, latent_dim)
+
         
         self.n = args.n_ways * (args.k_shots + args.q_shots)
         self.eaen = nn.Sequential(
@@ -554,9 +566,6 @@ class TADCEncoder(nn.Module):
             nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
             act_fn(),                                                                                                # F
         )
-
-        self.h1 = nn.Linear(c_hid*25, latent_dim) 
-        self.h2 = nn.Linear(c_hid*25, latent_dim)
 
     def forward(self, x, update:str):
         x = self.net(x)
@@ -643,36 +652,41 @@ class CDecoder(nn.Module):
                 nn.Sigmoid()
             )
 
-        elif self.dataset == 'mini_imagenet':
-            self.linear = nn.Sequential(
-                nn.Linear(latent_dim, 25*c_hid),
-                act_fn()
-            )
+        elif (self.dataset == 'mini_imagenet') or (self.dataset == 'cifarfs'):
+            if self.dataset == 'mini_imagenet':
+                self.linear = nn.Sequential(
+                    nn.Linear(latent_dim, 25*c_hid),
+                    act_fn()
+                )
+                a1 = 10; a2 = 21; a3 = 42; a4 = 84
+            elif self.dataset == 'cifarfs':
+                self.linear = nn.Sequential(
+                    nn.Linear(latent_dim, 4*c_hid),
+                    act_fn()
+                )
+                a1 = 4; a2 = 8; a3 = 16; a4 = 32
+
             self.net = nn.Sequential(
-                # nn.UpsamplingNearest2d(size=(5, 5)),
-                # nn.Conv2d(in_channels=latent_dim, out_channels=c_hid, kernel_size=3, padding='same'),
-                # nn.BatchNorm2d(c_hid),
-                # act_fn(),
 
-                nn.UpsamplingNearest2d(size=(10, 10)),
+                nn.UpsamplingNearest2d(size=(a1, a1)),
                 nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                           kernel_size=3, padding='same'),
                 nn.BatchNorm2d(c_hid),
                 act_fn(),
 
-                nn.UpsamplingNearest2d(size=(21, 21)),
+                nn.UpsamplingNearest2d(size=(a2, a2)),
                 nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                           kernel_size=3, padding='same'),
                 nn.BatchNorm2d(c_hid),
                 act_fn(),
 
-                nn.UpsamplingNearest2d(size=(42, 42)),
+                nn.UpsamplingNearest2d(size=(a3, a3)),
                 nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                           kernel_size=3, padding='same'),
                 nn.BatchNorm2d(c_hid),
                 act_fn(),
 
-                nn.UpsamplingNearest2d(size=(84, 84)),
+                nn.UpsamplingNearest2d(size=(a4, a4)),
                 nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
                           kernel_size=3, padding='same'),
                 nn.BatchNorm2d(num_input_channels),
@@ -680,7 +694,7 @@ class CDecoder(nn.Module):
             )
 
     def forward(self, x):
-        if self.dataset == 'omniglot':
+        if (self.dataset == 'omniglot') or (self.dataset == 'cifarfs'):
             x = self.linear(x)
             x = x.reshape(x.shape[0], -1, 2, 2)
         elif self.dataset == 'mini_imagenet':
