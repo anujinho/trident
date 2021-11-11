@@ -22,7 +22,6 @@
 "experiment": "exp1",
 "order": "False",
 "device": "cuda",
-"download": "True",
 "resume": "No",
 "iter_resume": 0
 }
