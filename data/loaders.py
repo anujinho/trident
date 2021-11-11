@@ -282,11 +282,8 @@ class CIFARFS(ImageFolder):
         self.transform = transform
         self.target_transform = target_transform
         self.mode = mode
-        self.processed_root = os.path.join(self.root, 'processed')
-        self.raw_path = self.root
-
-        # self.processed_root = os.path.join(self.root, 'cifarfs', 'processed')
-        # self.raw_path = os.path.join(self.root, 'cifarfs')
+        self.processed_root = os.path.join(self.root, 'cifarfs', 'processed')
+        self.raw_path = os.path.join(self.root, 'cifarfs')
 
         if not self._check_exists() and download:
             self._download()

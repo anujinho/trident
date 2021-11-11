@@ -1,6 +1,6 @@
 {
 "dataset": "cifarfs",
-"root": "../dataset/cifarfs",
+"root": "../dataset",
 "model_path": "/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/DELPO_cifarfs_5-way_1-shot_15-queries/exp1",
 "n_ways": 5,
 "k_shots": 1,

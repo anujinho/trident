@@ -1,7 +1,7 @@
 {
 "dataset": "cifarfs",
-"root": "../dataset/cifarfs",
-"model_path": "/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/DELPO_cifarfs_5-way_1-shot_15-queries/exp3",
+"root": "../dataset",
+"model_path": "/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/DELPO_cifarfs_5-way_5-shot_15-queries/exp3",
 "n_ways": 5,
 "k_shots": 5,
 "q_shots": 15,
