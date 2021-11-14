@@ -90,9 +90,11 @@ reconst_loss = nn.MSELoss(reduction='none')
 
 if args.resume == 'Yes':
     learner = learner.to('cpu')
-    learner = torch.load('{}/model_{}.pt'.format(args.model_path, args.iter_resume))
+    dict_model = torch.load('{}/model_{}.pt'.format(args.model_path, args.iter_resume)).state_dict()
+    learner.load_state_dict(dict_model)
     learner = learner.to(args.device)
     opt.load_state_dict(torch.load('{}/opt_{}.pt'.format(args.model_path, args.iter_resume)))
+    learner.train()
     start = args.iter_resume + 1
 
 else:

@@ -27,7 +27,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         learner = CCVAE(in_channels=1, base_channels=64,
                         n_ways=n_ways, dataset='omniglot', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
-    elif dataset == 'miniimagenet':
+    elif (dataset == 'miniimagenet') or (dataset == 'tiered_imagenet'):
         # Generating tasks and model according to the MAML implementation for MiniImageNet
         train_tasks = gen_tasks(dataset, root, download=download, mode='train',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
@@ -35,7 +35,11 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
         test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
-        learner = CCVAE(in_channels=3, base_channels=32,
+        if dataset == 'miniimagenet':
+            learner = CCVAE(in_channels=3, base_channels=32,
+                        n_ways=n_ways, dataset='mini_imagenet', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
+        elif dataset == 'tiered_imagenet':
+            learner = CCVAE(in_channels=3, base_channels=64,
                         n_ways=n_ways, dataset='mini_imagenet', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
     
     elif dataset == 'cifarfs':
