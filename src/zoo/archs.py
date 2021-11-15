@@ -521,7 +521,7 @@ class TADCEncoder(nn.Module):
             self.h1 = nn.Linear(4*c_hid, latent_dim)
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
-        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs'):
+        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
                 nn.BatchNorm2d(c_hid),
@@ -547,7 +547,7 @@ class TADCEncoder(nn.Module):
                 nn.MaxPool2d(2)  # 1x1 # 5 x 5
             )
             
-            if dataset == 'mini_imagenet':
+            if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
                 self.h1 = nn.Linear(c_hid*25, latent_dim) 
                 self.h2 = nn.Linear(c_hid*25, latent_dim)
             elif dataset == 'cifarfs':
@@ -652,8 +652,8 @@ class CDecoder(nn.Module):
                 nn.Sigmoid()
             )
 
-        elif (self.dataset == 'mini_imagenet') or (self.dataset == 'cifarfs'):
-            if self.dataset == 'mini_imagenet':
+        elif (self.dataset == 'mini_imagenet') or (self.dataset == 'cifarfs') or (self.dataset == 'tiered'):
+            if (self.dataset == 'mini_imagenet') or (self.dataset == 'tiered'):
                 self.linear = nn.Sequential(
                     nn.Linear(latent_dim, 25*c_hid),
                     act_fn()
@@ -697,7 +697,7 @@ class CDecoder(nn.Module):
         if (self.dataset == 'omniglot') or (self.dataset == 'cifarfs'):
             x = self.linear(x)
             x = x.reshape(x.shape[0], -1, 2, 2)
-        elif self.dataset == 'mini_imagenet':
+        elif (self.dataset == 'mini_imagenet') or (self.dataset == 'tiered'):
             #x = x.unsqueeze(-1).unsqueeze(-1)
             x = self.linear(x)
             x = x.reshape(x.shape[0], -1, 5, 5)
