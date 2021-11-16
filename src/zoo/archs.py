@@ -425,7 +425,7 @@ class CEncoder(nn.Module):
             self.h1 = nn.Linear(4*c_hid, latent_dim)
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
-        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs'):
+        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
                 nn.BatchNorm2d(c_hid),
@@ -451,7 +451,7 @@ class CEncoder(nn.Module):
                 nn.MaxPool2d(2),  # 1x1 # 5 x 5
                 nn.Flatten()
             )
-            if dataset == 'mini_imagenet':
+            if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
                 self.h1 = nn.Linear(c_hid*25, latent_dim)
                 self.h2 = nn.Linear(c_hid*25, latent_dim)
             elif dataset == 'cifarfs':
