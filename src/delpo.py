@@ -83,7 +83,7 @@ elif args.task_adapt == 'False':
 # wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
-train_tasks, valid_tasks, test_tasks, learner = setup(
+train_tasks, valid_tasks, _, learner = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, task_adapt_fn=args.task_adapt_fn, args=args)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 reconst_loss = nn.MSELoss(reduction='none')
