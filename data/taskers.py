@@ -56,9 +56,9 @@ def gen_tasks(dataname, root, image_transforms=None, target_transforms=None, dow
         tasks = l2l.data.TaskDataset(dataset, task_transforms=trans, num_tasks=num_tasks)
 
     elif (dataname == 'tiered'):
-        mini = TieredImagenet(root, mode, transform=image_transforms,
+        tiered = TieredImagenet(root, mode, transform=image_transforms,
                             target_transform=target_transforms, download=download)
-        dataset = l2l.data.MetaDataset(mini)
+        dataset = l2l.data.MetaDataset(tiered)
 
         trans = [
             l2l.data.transforms.FusedNWaysKShots(dataset,
