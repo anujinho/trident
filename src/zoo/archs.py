@@ -778,7 +778,7 @@ class Classifier_VAE(nn.Module):
             mu, log_var = self.encoder(x)
         z = self.reparameterize(mu, log_var)
         logits = self.classifier(z)
-        return logits, mu, log_var
+        return logits, mu, log_var, z
 
 
 class CCVAE(nn.Module):
@@ -816,7 +816,7 @@ class CCVAE(nn.Module):
             return mu
 
     def forward(self, x, update):
-        logits, mu_l, log_var_l = self.classifier_vae(x, update)
+        logits, mu_l, log_var_l, z_l = self.classifier_vae(x, update)
         if self.task_adapt & (update == 'inner'):
             x = x[:self.args.n_ways*self.args.k_shots]
         elif self.task_adapt & (update == 'outer'):
@@ -825,7 +825,8 @@ class CCVAE(nn.Module):
             x = x
         mu_s, log_var_s = self.encoder(x)
         z_s = self.reparameterize(mu_s, log_var_s)
-        x = self.decoder(torch.cat([z_s, mu_l], dim=1))
+        #x = self.decoder(torch.cat([z_s, mu_l], dim=1))
+        x = self.decoder(torch.cat([z_s, z_l], dim=1))
         return x, logits, mu_l, log_var_l, mu_s, log_var_s
 
 
