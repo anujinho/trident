@@ -825,8 +825,8 @@ class CCVAE(nn.Module):
             x = x
         mu_s, log_var_s = self.encoder(x)
         z_s = self.reparameterize(mu_s, log_var_s)
-        #x = self.decoder(torch.cat([z_s, mu_l], dim=1))
-        x = self.decoder(torch.cat([z_s, z_l], dim=1))
+        x = self.decoder(torch.cat([z_s, mu_l], dim=1))
+        #x = self.decoder(torch.cat([z_s, z_l], dim=1))
         return x, logits, mu_l, log_var_l, mu_s, log_var_s
 
 
