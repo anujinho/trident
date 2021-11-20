@@ -121,6 +121,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
         backbone = ResNet12Backbone(args, avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
         weights = torch.load(args.pretrained[1], map_location=args.device)
         backbone.load_state_dict(weights)
+        backbone.to(args.device)
         # Freeze the backbone
         for p in backbone.parameters():
             p.requires_grad = False
