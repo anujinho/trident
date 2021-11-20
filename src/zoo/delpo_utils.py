@@ -8,7 +8,7 @@ from data.taskers import gen_tasks
 from PIL.Image import LANCZOS
 from torchvision import transforms
 
-from src.zoo.archs import CCVAE
+from src.zoo.archs import CCVAE, ResNet12Backbone
 
 
 def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, task_adapt, task_adapt_fn, args):
@@ -117,24 +117,36 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     queries = data[np.where(queries_index == 1)]
     queries_labels = labels[np.where(queries_index == 1)]
 
+    if args.pretrained[0] == True:
+        backbone = ResNet12Backbone(args, avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
+        weights = torch.load(args.pretrained[1], map_location=args.device)
+        backbone.load_state_dict(weights)
+        # Freeze the backbone
+        for p in backbone.parameters():
+            p.requires_grad = False
+        # Generate backbone features
+        support_ext = backbone(support)
+        queries_ext = backbone(queries)
+        input = [torch.cat([support_ext, queries_ext], dim=0), torch.cat([support, queries], dim=0)]
+    
+    elif args.pretrained[0] == False:
+        input = [torch.cat([support, queries], dim=0)]
+
+
     # Inner adapt step
     for _ in range(adapt_steps):
         if args.task_adapt:
-            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-                torch.cat([support, queries], dim=0), 'inner')
+            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(input, 'inner')
         else:
-            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-                support, 'inner')
+            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(support, 'inner')
         adapt_loss = loss(reconst_loss, reconst_image, support,
                           logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
         learner.adapt(adapt_loss['elbo'])
 
     if args.task_adapt:
-        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-            torch.cat([support, queries], dim=0), 'outer')
+        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(input, 'outer')
     else:
-        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-            queries, 'outer')
+        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries, 'outer')
     eval_loss = loss(reconst_loss, reconst_image, queries,
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)

@@ -388,6 +388,7 @@ class CEncoder(nn.Module):
                  latent_dim: int,
                  dataset: str,
                  args,
+                 flag,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -399,6 +400,7 @@ class CEncoder(nn.Module):
         """
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
+        self.args = args
         if dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
@@ -428,17 +430,10 @@ class CEncoder(nn.Module):
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
-                self.net = ResNet12Backbone(args, avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
-                weights = torch.load(args.pretrained[1], map_location=args.device)
-                self.net.load_state_dict(weights)
-                # Freeze the backbone
-                for p in self.net.parameters():
-                    p.requires_grad = False
-
                 self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
                 self.h2 = nn.Linear(args.pretrained[2], latent_dim)
             
-            elif args.pre_trained[0] == False:
+            elif (args.pre_trained[0] == False) or (flag == False):
                 self.net = nn.Sequential(
                     nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
                     nn.BatchNorm2d(c_hid),
@@ -475,7 +470,10 @@ class CEncoder(nn.Module):
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 
     def forward(self, x):
-        x = self.net(x)
+        if self.args.pretrained[0] == False:
+            x = self.net(x)
+        elif self.args.pretrained[0] == True:
+            x = x
         mu = self.h1(x)
         log_var = self.h2(x)
         return mu, log_var
@@ -536,13 +534,7 @@ class TADCEncoder(nn.Module):
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
-                self.net = ResNet12Backbone(args, avg_pool=False) # F => 16000 = 640 x 5 x 5; T => 640 = 640 x 1 x 1
-                weights = torch.load(args.pretrained[1], map_location=args.device)
-                self.net.load_state_dict(weights)
-                # Freeze the backbone
-                for p in self.net.parameters():
-                    p.requires_grad = False
-
+            
                 self.h1 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim)) 
                 self.h2 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
             
@@ -593,7 +585,10 @@ class TADCEncoder(nn.Module):
         )
 
     def forward(self, x, update:str):
-        x = self.net(x)
+        if self.args.pretrained[0] == False:
+            x = self.net(x)
+        elif self.args.pretrained[0] == True:
+            x = x
 
         # Task aware embeddings
         
@@ -841,17 +836,33 @@ class CCVAE(nn.Module):
             return mu
 
     def forward(self, x, update):
-        logits, mu_l, log_var_l, z_l = self.classifier_vae(x, update)
-        if self.task_adapt & (update == 'inner'):
-            x = x[:self.args.n_ways*self.args.k_shots]
-        elif self.task_adapt & (update == 'outer'):
-            x = x[self.args.n_ways*self.args.k_shots:]
-        else:
-            x = x
-        mu_s, log_var_s = self.encoder(x)
-        z_s = self.reparameterize(mu_s, log_var_s)
-        x = self.decoder(torch.cat([z_s, mu_l], dim=1))
-        #x = self.decoder(torch.cat([z_s, z_l], dim=1))
+        if self.args.pretrained[0] == False:
+            x = x[0]
+            logits, mu_l, log_var_l, z_l = self.classifier_vae(x, update)
+            if self.task_adapt & (update == 'inner'):
+                x = x[:self.args.n_ways*self.args.k_shots]
+            elif self.task_adapt & (update == 'outer'):
+                x = x[self.args.n_ways*self.args.k_shots:]
+            else:
+                x = x
+            mu_s, log_var_s = self.encoder(x)
+            z_s = self.reparameterize(mu_s, log_var_s)
+            #x = self.decoder(torch.cat([z_s, mu_l], dim=1))
+            x = self.decoder(torch.cat([z_s, z_l], dim=1))
+
+        elif self.args.pretrained[0] == True:
+            logits, mu_l, log_var_l, z_l = self.classifier_vae(x[0], update)
+            if self.task_adapt & (update == 'inner'):
+                x = x[1][:self.args.n_ways*self.args.k_shots]
+            elif self.task_adapt & (update == 'outer'):
+                x = x[1][self.args.n_ways*self.args.k_shots:]
+            else:
+                x = x[1]
+            mu_s, log_var_s = self.encoder(x)
+            z_s = self.reparameterize(mu_s, log_var_s)
+            #x = self.decoder(torch.cat([z_s, mu_l], dim=1))
+            x = self.decoder(torch.cat([z_s, z_l], dim=1))
+
         return x, logits, mu_l, log_var_l, mu_s, log_var_s
 
 
