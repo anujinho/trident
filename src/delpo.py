@@ -88,7 +88,7 @@ elif args.pretrained[0] == 'False':
 # wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
-train_tasks, valid_tasks, _, learner = setup(
+train_tasks, valid_tasks, _, learner, backbone = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, task_adapt_fn=args.task_adapt_fn, args=args)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 reconst_loss = nn.MSELoss(reduction='none')
@@ -124,7 +124,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         model = learner.clone()
         if (iter % 500 == 0) & (batch == 0):
             evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
-                ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
+                ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args, backbone)
 
             # Logging train-task images and latents
             di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
@@ -135,7 +135,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
 
         else:
             evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
-                ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
+                ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args, backbone)
 
         evaluation_loss['elbo'].backward()
 
@@ -155,7 +155,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     model = learner.clone()
     if iter % 500 == 0:
         validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
-            vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
+            vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args, backbone)
         # Logging valid-task images and latents
         di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
         dl = {"label_latents": [mu_l, log_var_l],
@@ -165,7 +165,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
 
     else:
         validation_loss, validation_accuracy = inner_adapt_delpo(
-            vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
+            vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args, backbone)
 
     # Logging per validation-task losses and accuracies
     tmp = [iter, validation_accuracy.item()]
