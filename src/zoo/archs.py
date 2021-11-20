@@ -429,51 +429,81 @@ class CEncoder(nn.Module):
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            if args.pretrained[0] == True:
-                self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
-                self.h2 = nn.Linear(args.pretrained[2], latent_dim)
-            
-            elif (args.pre_trained[0] == False) or (flag == False):
+            if flag == True:
                 self.net = nn.Sequential(
-                    nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+                        nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                        # nn.ZeroPad2d(conv_padding),
+                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                        # nn.ZeroPad2d(conv_padding),
+                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2)  # 1x1 # 5 x 5
-                )
-                
+                        # nn.ZeroPad2d(conv_padding),
+                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                    )
                 if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                    self.h1 = nn.Linear(c_hid*25, latent_dim) 
-                    self.h2 = nn.Linear(c_hid*25, latent_dim)
+                        self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                        self.h2 = nn.Linear(c_hid*25, latent_dim)
                 elif dataset == 'cifarfs':
                     self.h1 = nn.Linear(c_hid*4, latent_dim) 
                     self.h2 = nn.Linear(c_hid*4, latent_dim)
+            
+            elif flag == False:
+                if (args.pretrained[0] == True):
+                    self.net = Lambda(lambda x: x)
+                    self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
+                    self.h2 = nn.Linear(args.pretrained[2], latent_dim)
                 
+                elif (args.pre_trained[0] == False):
+                    self.net = nn.Sequential(
+                        nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+
+                        # nn.ZeroPad2d(conv_padding),
+                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2),  # 9x9 # 21 x 21
+
+                        # nn.ZeroPad2d(conv_padding),
+                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2),  # 3x3 # 10 x 10
+
+                        # nn.ZeroPad2d(conv_padding),
+                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(c_hid),
+                        act_fn(),
+                        nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                    )
+                if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
+                        self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                        self.h2 = nn.Linear(c_hid*25, latent_dim)
+                elif dataset == 'cifarfs':
+                    self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                    self.h2 = nn.Linear(c_hid*4, latent_dim)
+                    
             # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 
     def forward(self, x):
-        if self.args.pretrained[0] == False:
-            x = self.net(x)
-        elif self.args.pretrained[0] == True:
-            x = x
+        x = self.net(x)
         mu = self.h1(x)
         log_var = self.h2(x)
         return mu, log_var
@@ -777,7 +807,7 @@ class Classifier_VAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else: 
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args, flag=False)
 
         self.classifier = nn.Sequential(
             nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
@@ -819,7 +849,7 @@ class CCVAE(nn.Module):
         self.args = args
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset, args=args)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset, args=args, flag=True)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
