@@ -536,15 +536,15 @@ class TADCEncoder(nn.Module):
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
-                self.net = ResNet12Backbone(avg_pool=True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
+                self.net = ResNet12Backbone(args, avg_pool=False) # F => 16000 = 640 x 5 x 5; T => 640 = 640 x 1 x 1
                 weights = torch.load(args.pretrained[1], map_location=args.device)
                 self.net.load_state_dict(weights)
                 # Freeze the backbone
                 for p in self.net.parameters():
                     p.requires_grad = False
 
-                self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
-                self.h2 = nn.Linear(args.pretrained[2], latent_dim)
+                self.h1 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim)) 
+                self.h2 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
             
             elif args.pre_trained[0] == False:
                 self.net = nn.Sequential(
@@ -1015,6 +1015,7 @@ class ResNet12Backbone(nn.Module):
 
     def __init__(
         self,
+        args,
         avg_pool=True,  # Set to False for 16000-dim embeddings
         wider=True,  # True mimics MetaOptNet, False mimics TADAM
         embedding_dropout=0.0,  # dropout for embedding
@@ -1023,6 +1024,7 @@ class ResNet12Backbone(nn.Module):
         channels=3,
     ):
         super(ResNet12Backbone, self).__init__()
+        self.args = args
         self.inplanes = channels
         block = BasicBlock
         if wider:
@@ -1109,13 +1111,21 @@ class ResNet12Backbone(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        x = self.flatten(x)
-        x = self.dropout(x)
+        if self.args.pretrain[2] == 640:
+            x = self.layer1(x)
+            x = self.layer2(x)
+            x = self.layer3(x)
+            x = self.layer4(x)
+            x = self.avgpool(x)
+            x = self.flatten(x)
+            x = self.dropout(x)
+        elif self.args.pretrain[2] == 16000:
+            x = self.layer1(x)
+            x = self.layer2(x)
+            x = self.layer3(x)
+            x = self.layer4(x)
+            x = self.avgpool(x)
+            
         return x
 
 
