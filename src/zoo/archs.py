@@ -428,7 +428,7 @@ class CEncoder(nn.Module):
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
-                self.net = ResNet12Backbone(avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
+                self.net = ResNet12Backbone(args, avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
                 weights = torch.load(args.pretrained[1], map_location=args.device)
                 self.net.load_state_dict(weights)
                 # Freeze the backbone
