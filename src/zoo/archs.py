@@ -824,7 +824,7 @@ class CCVAE(nn.Module):
         self.args = args
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset, args=args)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
