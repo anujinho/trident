@@ -45,7 +45,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='validation',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)#, num_tasks=10000)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='test',
-                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
+                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=2000)
         learner = CCVAE(in_channels=3, base_channels=32,
                         n_ways=n_ways, dataset='tiered', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
     

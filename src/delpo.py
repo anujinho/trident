@@ -1,4 +1,3 @@
-import os
 import argparse
 import json
 
@@ -23,6 +22,7 @@ parser.add_argument('--cnfg', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
 parser.add_argument('--model-path', type=str)
+parser.add_argument('--pretrain', type=list)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
@@ -79,6 +79,11 @@ if args.task_adapt == 'True':
     args.task_adapt = True
 elif args.task_adapt == 'False':
     args.task_adapt = False
+
+if args.pretrain[0] == 'True':
+    args.pretrain[0] = True
+elif args.pretrain[0] == 'False':
+    args.pretrain[0] = False
 
 # wandb.config.update(args)
 
@@ -188,25 +193,3 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
 
 profiler.log_model(learner, opt, 'last')
 profiler.log_model(learner, opt, iter)
-
-## Testing ##
-print('Testing on held out classes')
-# offloading unused tensors from the gpu
-del evaluation_loss, evaluation_accuracy, validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s
-learner.to(args.device)
-
-for i, tetask in enumerate(test_tasks):
-    # wandb.define_metric("accuracies", summary="max")
-    # wandb.define_metric("accuracies", summary="mean")
-
-    model = learner.clone()
-    #tetask = test_tasks.sample()
-    evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
-        tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args)
-
-    # Logging per test-task losses and accuracies
-    tmp = [i, evaluation_accuracy.item()]
-    tmp = tmp + [a.item() for a in evaluation_loss.values()]
-    profiler.log_csv(tmp, 'test')
-    # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
-    #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))

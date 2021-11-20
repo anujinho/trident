@@ -387,6 +387,7 @@ class CEncoder(nn.Module):
                  base_channel_size: int,
                  latent_dim: int,
                  dataset: str,
+                 args,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -426,37 +427,49 @@ class CEncoder(nn.Module):
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            self.net = nn.Sequential(
-                nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+            if args.pretrained[0] == True:
+                self.net = ResNet12Backbone(avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
+                weights = torch.load(args.pretrained[1], map_location=args.device)
+                self.net.load_state_dict(weights)
+                # Freeze the backbone
+                for p in self.net.parameters():
+                    p.requires_grad = False
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
+                self.h2 = nn.Linear(args.pretrained[2], latent_dim)
+            
+            elif args.pre_trained[0] == False:
+                self.net = nn.Sequential(
+                    nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 1x1 # 5 x 5
-                nn.Flatten()
-            )
-            if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                self.h1 = nn.Linear(c_hid*25, latent_dim)
-                self.h2 = nn.Linear(c_hid*25, latent_dim)
-            elif dataset == 'cifarfs':
-                self.h1 = nn.Linear(c_hid*4, latent_dim)
-                self.h2 = nn.Linear(c_hid*4, latent_dim)
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                )
+                
+                if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
+                    self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                    self.h2 = nn.Linear(c_hid*25, latent_dim)
+                elif dataset == 'cifarfs':
+                    self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                    self.h2 = nn.Linear(c_hid*4, latent_dim)
                 
             # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
@@ -522,37 +535,49 @@ class TADCEncoder(nn.Module):
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            self.net = nn.Sequential(
-                nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+            if args.pretrained[0] == True:
+                self.net = ResNet12Backbone(avg_pool=True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
+                weights = torch.load(args.pretrained[1], map_location=args.device)
+                self.net.load_state_dict(weights)
+                # Freeze the backbone
+                for p in self.net.parameters():
+                    p.requires_grad = False
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 9x9 # 21 x 21
-
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 3x3 # 10 x 10
-
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2)  # 1x1 # 5 x 5
-            )
+                self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
+                self.h2 = nn.Linear(args.pretrained[2], latent_dim)
             
-            if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                self.h1 = nn.Linear(c_hid*25, latent_dim) 
-                self.h2 = nn.Linear(c_hid*25, latent_dim)
-            elif dataset == 'cifarfs':
-                self.h1 = nn.Linear(c_hid*4, latent_dim) 
-                self.h2 = nn.Linear(c_hid*4, latent_dim)
+            elif args.pre_trained[0] == False:
+                self.net = nn.Sequential(
+                    nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                )
+                
+                if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
+                    self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                    self.h2 = nn.Linear(c_hid*25, latent_dim)
+                elif dataset == 'cifarfs':
+                    self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                    self.h2 = nn.Linear(c_hid*4, latent_dim)
 
         
         self.n = args.n_ways * (args.k_shots + args.q_shots)
@@ -757,7 +782,7 @@ class Classifier_VAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else: 
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
 
         self.classifier = nn.Sequential(
             nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
@@ -836,26 +861,40 @@ def conv3x3(in_planes, out_planes, stride=1):
                      padding=1, bias=False)
 
 
-def conv1x1(in_planes, out_planes, stride=1):
-    """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
-
-
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride=1,
+        downsample=None,
+        drop_rate=0.0,
+        drop_block=False,
+        block_size=1,
+    ):
         super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.LeakyReLU(0.1)
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = nn.BatchNorm2d(planes)
+        self.conv3 = conv3x3(planes, planes)
+        self.bn3 = nn.BatchNorm2d(planes)
+        self.maxpool = nn.MaxPool2d(stride)
         self.downsample = downsample
         self.stride = stride
+        self.drop_rate = drop_rate
+        self.num_batches_tracked = 0
+        self.drop_block = drop_block
+        self.block_size = block_size
+        self.DropBlock = DropBlock(block_size=self.block_size)
 
     def forward(self, x):
-        identity = x
+        self.num_batches_tracked += 1
+
+        residual = x
 
         out = self.conv1(x)
         out = self.bn1(out)
@@ -863,88 +902,316 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-
-        if self.downsample is not None:
-            identity = self.downsample(x)
-
-        out += identity
         out = self.relu(out)
 
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        out += residual
+        out = self.relu(out)
+        out = self.maxpool(out)
+
+        if self.drop_rate > 0:
+            if self.drop_block:
+                feat_size = out.size()[2]
+                keep_rate = max(
+                    1.0 - self.drop_rate / 40000 * self.num_batches_tracked,
+                    1.0 - self.drop_rate
+                )
+                gamma = (
+                    (1 - keep_rate)
+                    / self.block_size**2 * feat_size**2
+                    / (feat_size - self.block_size + 1)**2
+                )
+                out = self.DropBlock(out, gamma=gamma)
+            else:
+                out = F.dropout(
+                    out,
+                    p=self.drop_rate,
+                    training=self.training,
+                    inplace=True,
+                )
         return out
 
 
-class ResNet(nn.Module):
+class DropBlock(nn.Module):
+    def __init__(self, block_size):
+        super(DropBlock, self).__init__()
+        self.block_size = block_size
 
-    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, remove_linear=False):
-        super(ResNet, self).__init__()
-        self.inplanes = 64
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        if remove_linear:
-            self.fc = None
+    def forward(self, x, gamma):
+
+        if self.training:
+            batch_size, channels, height, width = x.shape
+
+            bernoulli = torch.distributions.Bernoulli(gamma)
+            mask = bernoulli.sample((
+                batch_size,
+                channels,
+                height - (self.block_size - 1),
+                width - (self.block_size - 1),
+            )).to(x.device)
+            block_mask = self._compute_block_mask(mask)
+            countM = (
+                block_mask.size(0)
+                * block_mask.size(1)
+                * block_mask.size(2)
+                * block_mask.size(3)
+            )
+            count_ones = block_mask.sum()
+            return block_mask * x * (countM / count_ones)
         else:
-            self.fc = nn.Linear(512 * block.expansion, num_classes)
+            return x
+
+    def _compute_block_mask(self, mask):
+        left_padding = int((self.block_size-1) / 2)
+        right_padding = int(self.block_size / 2)
+
+        batch_size, channels, height, width = mask.shape
+        non_zero_idxs = mask.nonzero(as_tuple=False)
+        nr_blocks = non_zero_idxs.shape[0]
+
+        offsets = torch.stack(
+            [
+                torch.arange(self.block_size).view(-1, 1).expand(
+                    self.block_size,
+                    self.block_size).reshape(-1),
+                torch.arange(self.block_size).repeat(self.block_size),
+            ]
+        ).t()
+        offsets = torch.cat(
+            (torch.zeros(self.block_size**2, 2).long(), offsets.long()),
+            dim=1,
+        ).to(mask.device)
+
+        if nr_blocks > 0:
+            non_zero_idxs = non_zero_idxs.repeat(self.block_size ** 2, 1)
+            offsets = offsets.repeat(nr_blocks, 1).view(-1, 4)
+            offsets = offsets.long()
+
+            block_idxs = non_zero_idxs + offsets
+            padded_mask = F.pad(
+                mask,
+                (left_padding, right_padding, left_padding, right_padding)
+            )
+            padded_mask[
+                block_idxs[:, 0],
+                block_idxs[:, 1],
+                block_idxs[:, 2],
+                block_idxs[:, 3]] = 1.0
+        else:
+            padded_mask = F.pad(
+                mask,
+                (left_padding, right_padding, left_padding, right_padding)
+            )
+
+        block_mask = 1 - padded_mask
+        return block_mask
+
+
+class ResNet12Backbone(nn.Module):
+
+    def __init__(
+        self,
+        avg_pool=True,  # Set to False for 16000-dim embeddings
+        wider=True,  # True mimics MetaOptNet, False mimics TADAM
+        embedding_dropout=0.0,  # dropout for embedding
+        dropblock_dropout=0.1,  # dropout for residual layers
+        dropblock_size=5,
+        channels=3,
+    ):
+        super(ResNet12Backbone, self).__init__()
+        self.inplanes = channels
+        block = BasicBlock
+        if wider:
+            num_filters = [64, 160, 320, 640]
+        else:
+            num_filters = [64, 128, 256, 512]
+
+        self.layer1 = self._make_layer(
+            block,
+            num_filters[0],
+            stride=2,
+            dropblock_dropout=dropblock_dropout,
+        )
+        self.layer2 = self._make_layer(
+            block,
+            num_filters[1],
+            stride=2,
+            dropblock_dropout=dropblock_dropout,
+        )
+        self.layer3 = self._make_layer(
+            block,
+            num_filters[2],
+            stride=2,
+            dropblock_dropout=dropblock_dropout,
+            drop_block=True,
+            block_size=dropblock_size,
+        )
+        self.layer4 = self._make_layer(
+            block,
+            num_filters[3],
+            stride=2,
+            dropblock_dropout=dropblock_dropout,
+            drop_block=True,
+            block_size=dropblock_size,
+        )
+        if avg_pool:
+            self.avgpool = nn.AvgPool2d(5, stride=1)
+        else:
+            self.avgpool = Lambda(lambda x: x)
+        self.flatten = Flatten()
+        self.embedding_dropout = embedding_dropout
+        self.keep_avg_pool = avg_pool
+        self.dropout = nn.Dropout(p=self.embedding_dropout, inplace=False)
+        self.dropblock_dropout = dropblock_dropout
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(
-                    m.weight, mode='fan_out', nonlinearity='relu')
+                    m.weight,
+                    mode='fan_out',
+                    nonlinearity='leaky_relu',
+                )
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-        # Zero-initialize the last BN in each residual branch,
-        # so that the residual branch starts with zeros, and each residual block behaves like an identity.
-        # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)
-                elif isinstance(m, BasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)
-
-    def _make_layer(self, block, planes, blocks, stride=1):
+    def _make_layer(
+        self,
+        block,
+        planes,
+        stride=1,
+        dropblock_dropout=0.0,
+        drop_block=False,
+        block_size=1,
+    ):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes * block.expansion, stride),
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                          kernel_size=1, stride=1, bias=False),
                 nn.BatchNorm2d(planes * block.expansion),
             )
-
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers.append(block(
+            self.inplanes,
+            planes,
+            stride,
+            downsample,
+            dropblock_dropout,
+            drop_block,
+            block_size)
+        )
         self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
         return nn.Sequential(*layers)
 
-    def forward(self, x, feature=False):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-
+    def forward(self, x):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-
         x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        if self.fc is None:
-            if feature:
-                return x, None
-            else:
-                return x
-        if feature:
-            x1 = self.fc(x)
-            return x, x1
-        x = self.fc(x)
+        x = self.flatten(x)
+        x = self.dropout(x)
         return x
+
+
+def conv3x3wrn(in_planes, out_planes, stride=1):
+    return torch.nn.Conv2d(
+        in_planes,
+        out_planes,
+        kernel_size=3,
+        stride=stride,
+        padding=1,
+        bias=True,
+    )
+
+def conv_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        torch.nn.init.xavier_uniform(m.weight, gain=2**0.5)
+        torch.nn.init.constant(m.bias, 0)
+    elif classname.find('BatchNorm') != -1:
+        torch.nn.init.constant(m.weight, 1)
+        torch.nn.init.constant(m.bias, 0)
+
+
+class wide_basic(torch.nn.Module):
+
+    def __init__(self, in_planes, planes, dropout_rate, stride=1):
+        super(wide_basic, self).__init__()
+        self.bn1 = torch.nn.BatchNorm2d(in_planes)
+        self.conv1 = torch.nn.Conv2d(in_planes, planes, kernel_size=3, padding=1, bias=True)
+        self.dropout = torch.nn.Dropout(p=dropout_rate)
+        self.bn2 = torch.nn.BatchNorm2d(planes)
+        self.conv2 = torch.nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=True)
+
+        self.shortcut = torch.nn.Sequential()
+        if stride != 1 or in_planes != planes:
+            self.shortcut = torch.nn.Sequential(
+                torch.nn.Conv2d(
+                    in_planes,
+                    planes,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=True
+                ),
+            )
+
+    def forward(self, x):
+        out = self.dropout(self.conv1(F.relu(self.bn1(x))))
+        out = self.conv2(F.relu(self.bn2(out)))
+        out += self.shortcut(x)
+        return out
+
+
+class WideResNet(torch.nn.Module):
+
+    def __init__(self, depth, widen_factor, dropout_rate):
+        super(WideResNet, self).__init__()
+        self.in_planes = 16
+
+        assert ((depth - 4) % 6 == 0), 'Wide-resnet depth should be 6n+4'
+        n = int((depth - 4) / 6)
+        k = widen_factor
+
+        nStages = [16, 16*k, 32*k, 64*k]
+
+        self.conv1 = conv3x3wrn(3, nStages[0])
+        self.layer1 = self._wide_layer(wide_basic, nStages[1], n, dropout_rate, stride=1)
+        self.layer2 = self._wide_layer(wide_basic, nStages[2], n, dropout_rate, stride=2)
+        self.layer3 = self._wide_layer(wide_basic, nStages[3], n, dropout_rate, stride=2)
+        self.bn1 = torch.nn.BatchNorm2d(nStages[3], momentum=0.9)
+
+    def _wide_layer(self, block, planes, num_blocks, dropout_rate, stride):
+        strides = [stride] + [1]*(num_blocks-1)
+        layers = []
+
+        for stride in strides:
+            layers.append(block(self.in_planes, planes, dropout_rate, stride))
+            self.in_planes = planes
+
+        return torch.nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = F.relu(self.bn1(out))
+        out = F.avg_pool2d(out, 21)
+        out = out.view(out.size(0), -1)
+        return out
+
+
+class WRN28Backbone(WideResNet):
+
+    def __init__(self, dropout=0.0):
+        super(WRN28Backbone, self).__init__(
+            depth=28,
+            widen_factor=10,
+            dropout_rate=dropout,
+        )
