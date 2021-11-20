@@ -1111,7 +1111,7 @@ class ResNet12Backbone(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.args.pretrain[2] == 640:
+        if self.args.pretrained[2] == 640:
             x = self.layer1(x)
             x = self.layer2(x)
             x = self.layer3(x)
@@ -1119,7 +1119,7 @@ class ResNet12Backbone(nn.Module):
             x = self.avgpool(x)
             x = self.flatten(x)
             x = self.dropout(x)
-        elif self.args.pretrain[2] == 16000:
+        elif self.args.pretrained[2] == 16000:
             x = self.layer1(x)
             x = self.layer2(x)
             x = self.layer3(x)
