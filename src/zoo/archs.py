@@ -867,7 +867,6 @@ class CCVAE(nn.Module):
 
     def forward(self, x, update):
         if self.args.pretrained[0] == False:
-            x = x[0]
             logits, mu_l, log_var_l, z_l = self.classifier_vae(x, update)
             if self.task_adapt & (update == 'inner'):
                 x = x[:self.args.n_ways*self.args.k_shots]

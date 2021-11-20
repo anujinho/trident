@@ -41,14 +41,14 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
     elif (dataset == 'tiered'):
         image_trans = transforms.Compose([transforms.ToTensor()])
         train_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='train',
-                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)#, num_tasks=50000)
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)  # , num_tasks=50000)
         valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='validation',
-                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)#, num_tasks=10000)
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)  # , num_tasks=10000)
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=2000)
         learner = CCVAE(in_channels=3, base_channels=32,
                         n_ways=n_ways, dataset='tiered', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
-    
+
     elif dataset == 'cifarfs':
         image_trans = transforms.Compose([transforms.ToTensor()])
         train_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='train',
@@ -59,12 +59,24 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = CCVAE(in_channels=3, base_channels=64,
                         n_ways=n_ways, dataset='cifarfs', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
-    
 
     learner = learner.to(device)
     learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr)
 
-    return train_tasks, valid_tasks, test_tasks, learner
+    # Init the Backbone
+    if args.pretrained[0] == True:
+        backbone = ResNet12Backbone(
+            args, avg_pool=True if args.pretrained[2] == 640 else False)  # F => 16000; T => 640
+        weights = torch.load(args.pretrained[1])
+        backbone.load_state_dict(weights)
+        backbone.to(args.device)
+        # Freeze the backbone
+        for p in backbone.parameters():
+            p.requires_grad = False
+    else:
+        backbone = 'None'
+
+    return train_tasks, valid_tasks, test_tasks, learner, backbone
 
 
 def accuracy(predictions, targets):
@@ -99,7 +111,7 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args):
+def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args, backbone):
     data, labels = task
     if args.dataset == 'miniimagenet':
         data, labels = data.to(device) / 255.0, labels.to(device)
@@ -118,36 +130,48 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     queries_labels = labels[np.where(queries_index == 1)]
 
     if args.pretrained[0] == True:
-        backbone = ResNet12Backbone(args, avg_pool = True if args.pretrained[2] == 640 else False) # F => 16000; T => 640
-        weights = torch.load(args.pretrained[1], map_location=args.device)
-        backbone.load_state_dict(weights)
-        backbone.to(args.device)
-        # Freeze the backbone
-        for p in backbone.parameters():
-            p.requires_grad = False
-        # Generate backbone features
         support_ext = backbone(support)
         queries_ext = backbone(queries)
-        input = [torch.cat([support_ext, queries_ext], dim=0), torch.cat([support, queries], dim=0)]
-    
-    elif args.pretrained[0] == False:
-        input = [torch.cat([support, queries], dim=0)]
-
 
     # Inner adapt step
-    for _ in range(adapt_steps):
-        if args.task_adapt:
-            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(input, 'inner')
-        else:
-            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(support, 'inner')
-        adapt_loss = loss(reconst_loss, reconst_image, support,
-                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
-        learner.adapt(adapt_loss['elbo'])
+    if args.pretrained[0] == True:
+        for _ in range(adapt_steps):
+            if args.task_adapt:
+                reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner([torch.cat(
+                    [support_ext, queries_ext], dim=0), torch.cat([support, queries], dim=0)], 'inner')
+            else:
+                reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+                    [support_ext, support], 'inner')
+            adapt_loss = loss(reconst_loss, reconst_image, support,
+                              logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
+            learner.adapt(adapt_loss['elbo'])
 
-    if args.task_adapt:
-        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(input, 'outer')
-    else:
-        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries, 'outer')
+        if args.task_adapt:
+            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner([torch.cat(
+                [support_ext, queries_ext], dim=0), torch.cat([support, queries], dim=0)], 'outer')
+        else:
+            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+                [queries_ext, queries], 'outer')
+
+    if args.pretrained[0] == False:
+        for _ in range(adapt_steps):
+            if args.task_adapt:
+                reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+                    torch.cat([support, queries], dim=0), 'inner')
+            else:
+                reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+                    support, 'inner')
+            adapt_loss = loss(reconst_loss, reconst_image, support,
+                              logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
+            learner.adapt(adapt_loss['elbo'])
+
+        if args.task_adapt:
+            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+                torch.cat([support, queries], dim=0), 'outer')
+        else:
+            reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+                queries, 'outer')
+
     eval_loss = loss(reconst_loss, reconst_image, queries,
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
