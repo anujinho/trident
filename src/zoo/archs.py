@@ -452,7 +452,8 @@ class CEncoder(nn.Module):
                         nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
                         nn.BatchNorm2d(c_hid),
                         act_fn(),
-                        nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                        nn.MaxPool2d(2),  # 1x1 # 5 x 5
+                        nn.Flatten()
                     )
                 if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
                         self.h1 = nn.Linear(c_hid*25, latent_dim) 
@@ -462,12 +463,12 @@ class CEncoder(nn.Module):
                     self.h2 = nn.Linear(c_hid*4, latent_dim)
             
             elif flag == False:
-                if (args.pretrained[0] == True):
+                if args.pretrained[0] == True:
                     self.net = Lambda(lambda x: x)
                     self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
                     self.h2 = nn.Linear(args.pretrained[2], latent_dim)
                 
-                elif (args.pre_trained[0] == False):
+                elif args.pre_trained[0] == False:
                     self.net = nn.Sequential(
                         nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
                         nn.BatchNorm2d(c_hid),
@@ -492,13 +493,13 @@ class CEncoder(nn.Module):
                         act_fn(),
                         nn.MaxPool2d(2)  # 1x1 # 5 x 5
                     )
-                if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                        self.h1 = nn.Linear(c_hid*25, latent_dim) 
-                        self.h2 = nn.Linear(c_hid*25, latent_dim)
-                elif dataset == 'cifarfs':
-                    self.h1 = nn.Linear(c_hid*4, latent_dim) 
-                    self.h2 = nn.Linear(c_hid*4, latent_dim)
-                    
+                    if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
+                            self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                            self.h2 = nn.Linear(c_hid*25, latent_dim)
+                    elif dataset == 'cifarfs':
+                        self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                        self.h2 = nn.Linear(c_hid*4, latent_dim)
+                        
             # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 

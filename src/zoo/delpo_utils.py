@@ -160,7 +160,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
                     torch.cat([support, queries], dim=0), 'inner')
             else:
                 reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-                    [support], 'inner')
+                    support, 'inner')
             adapt_loss = loss(reconst_loss, reconst_image, support,
                               logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
             learner.adapt(adapt_loss['elbo'])
@@ -170,7 +170,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
                 torch.cat([support, queries], dim=0), 'outer')
         else:
             reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-                [queries], 'outer')
+                queries, 'outer')
 
     eval_loss = loss(reconst_loss, reconst_image, queries,
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
