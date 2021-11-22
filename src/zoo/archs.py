@@ -567,7 +567,7 @@ class TADCEncoder(nn.Module):
             self.h1 = nn.Linear(4*c_hid, latent_dim)
             self.h2 = nn.Linear(4*c_hid, latent_dim)
 
-        elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
+        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
 
                 self.h1 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim)) 
