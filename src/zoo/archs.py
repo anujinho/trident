@@ -401,6 +401,7 @@ class CEncoder(nn.Module):
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
+        self.flag = flag
         if dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
@@ -464,7 +465,7 @@ class CEncoder(nn.Module):
             
             elif flag == False:
                 if args.pretrained[0] == True:
-                    self.net = Lambda(lambda x: x)
+                    #self.net = Lambda(lambda x: x)
                     self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
                     self.h2 = nn.Linear(args.pretrained[2], latent_dim)
                 
@@ -504,7 +505,10 @@ class CEncoder(nn.Module):
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 
     def forward(self, x):
-        x = self.net(x)
+        if self.flag or ((self.flag == False) and (self.args.pretrained[0] == False)): 
+            x = self.net(x)
+        else:
+            x = x
         mu = self.h1(x)
         log_var = self.h2(x)
         return mu, log_var
