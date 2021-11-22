@@ -67,7 +67,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
     if args.pretrained[0] == True:
         backbone = ResNet12Backbone(
             args, avg_pool=True if args.pretrained[2] == 640 else False)  # F => 16000; T => 640
-        weights = torch.load(args.pretrained[1])
+        weights = torch.load(args.pretrained[1], map_location='cpu')
         backbone.load_state_dict(weights)
         backbone.to(args.device)
         # Freeze the backbone
