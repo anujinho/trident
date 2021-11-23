@@ -432,46 +432,48 @@ class CEncoder(nn.Module):
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if flag == True:
                 self.net = nn.Sequential(
-                        nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+                    nn.Conv2d(num_input_channels, c_hid,
+                              kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-                        # nn.ZeroPad2d(conv_padding),
-                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-                        # nn.ZeroPad2d(conv_padding),
-                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-                        # nn.ZeroPad2d(conv_padding),
-                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 1x1 # 5 x 5
-                        nn.Flatten()
-                    )
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 1x1 # 5 x 5
+                    nn.Flatten()
+                )
                 if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                        self.h1 = nn.Linear(c_hid*25, latent_dim) 
-                        self.h2 = nn.Linear(c_hid*25, latent_dim)
+                    self.h1 = nn.Linear(c_hid*25, latent_dim)
+                    self.h2 = nn.Linear(c_hid*25, latent_dim)
                 elif dataset == 'cifarfs':
-                    self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                    self.h1 = nn.Linear(c_hid*4, latent_dim)
                     self.h2 = nn.Linear(c_hid*4, latent_dim)
-            
+
             elif flag == False:
                 if args.pretrained[0] == True:
                     #self.net = Lambda(lambda x: x)
-                    self.h1 = nn.Linear(args.pretrained[2], latent_dim) 
+                    self.h1 = nn.Linear(args.pretrained[2], latent_dim)
                     self.h2 = nn.Linear(args.pretrained[2], latent_dim)
-                
+
                 elif args.pre_trained[0] == False:
                     self.net = nn.Sequential(
-                        nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                        nn.Conv2d(num_input_channels, c_hid,
+                                  kernel_size=3, padding=1),
                         nn.BatchNorm2d(c_hid),
                         act_fn(),
                         nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -495,17 +497,17 @@ class CEncoder(nn.Module):
                         nn.MaxPool2d(2)  # 1x1 # 5 x 5
                     )
                     if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                            self.h1 = nn.Linear(c_hid*25, latent_dim) 
-                            self.h2 = nn.Linear(c_hid*25, latent_dim)
+                        self.h1 = nn.Linear(c_hid*25, latent_dim)
+                        self.h2 = nn.Linear(c_hid*25, latent_dim)
                     elif dataset == 'cifarfs':
-                        self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                        self.h1 = nn.Linear(c_hid*4, latent_dim)
                         self.h2 = nn.Linear(c_hid*4, latent_dim)
-                        
+
             # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
             # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
 
     def forward(self, x):
-        if self.flag or ((self.flag == False) and (self.args.pretrained[0] == False)): 
+        if self.flag or ((self.flag == False) and (self.args.pretrained[0] == False)):
             x = self.net(x)
         else:
             x = x
@@ -537,11 +539,11 @@ class TADCEncoder(nn.Module):
             - act_fn : Activation function used throughout the encoder network
         """
 
+        super(TADCEncoder, self).__init__()
+        c_hid = base_channel_size
         self.args = args
         self.task_adapt_fn = task_adapt_fn
 
-        super(TADCEncoder, self).__init__()
-        c_hid = base_channel_size
         if dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
@@ -569,13 +571,15 @@ class TADCEncoder(nn.Module):
 
         elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
+                self.h1 = nn.Sequential(nn.Linear(
+                    640*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
+                self.h2 = nn.Sequential(nn.Linear(
+                    640*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
 
-                self.h1 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim)) 
-                self.h2 = nn.Sequential(nn.Linear(args.pretrained[2]*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
-            
             elif args.pre_trained[0] == False:
                 self.net = nn.Sequential(
-                    nn.Conv2d(num_input_channels, c_hid, kernel_size=3, padding=1),
+                    nn.Conv2d(num_input_channels, c_hid,
+                              kernel_size=3, padding=1),
                     nn.BatchNorm2d(c_hid),
                     act_fn(),
                     nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -598,54 +602,60 @@ class TADCEncoder(nn.Module):
                     act_fn(),
                     nn.MaxPool2d(2)  # 1x1 # 5 x 5
                 )
-                
+
                 if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                    self.h1 = nn.Linear(c_hid*25, latent_dim) 
+                    self.h1 = nn.Linear(c_hid*25, latent_dim)
                     self.h2 = nn.Linear(c_hid*25, latent_dim)
                 elif dataset == 'cifarfs':
-                    self.h1 = nn.Linear(c_hid*4, latent_dim) 
+                    self.h1 = nn.Linear(c_hid*4, latent_dim)
                     self.h2 = nn.Linear(c_hid*4, latent_dim)
 
-        
         self.n = args.n_ways * (args.k_shots + args.q_shots)
         self.eaen = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(self.n,1), stride=(1,1), padding='valid', bias=False),
-            act_fn(),                                                                                                # P
-            
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
-            act_fn(),                                                                                                # Z
-            
-            nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
-            act_fn(),                                                                                                # F
+            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+                self.n, 1), stride=(1, 1), padding='valid', bias=False),
+            # P
+            act_fn(),
+
+            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False),
+            # Z
+            act_fn(),
+
+            nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False),
+            # F
+            act_fn(),
         )
 
-    def forward(self, x, update:str):
+    def forward(self, x, update: str):
         if self.args.pretrained[0] == False:
             x = self.net(x)
         elif self.args.pretrained[0] == True:
             x = x
 
         # Task aware embeddings
-        
+
         if self.task_adapt_fn == 'eaen':
-            G = x.permute(2,3,0,1)
-            G = G.reshape(G.shape[0] * G.shape[1], G.shape[2], G.shape[3]).unsqueeze(dim=1)
+            G = x.permute(2, 3, 0, 1)
+            G = G.reshape(G.shape[0] * G.shape[1],
+                          G.shape[2], G.shape[3]).unsqueeze(dim=1)
             G = self.eaen(G)
-            G = G.squeeze().transpose(0,1).reshape(-1, x.shape[2], x.shape[3])
+            G = G.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
             if update == 'inner':
                 x = x[:self.args.n_ways*self.args.k_shots] * G
             elif update == 'outer':
                 x = x[self.args.n_ways*self.args.k_shots:] * G
             x = nn.Flatten()(x)
-        
+
         elif self.task_adapt_fn == 'gks':
             G = x.reshape(self.n, -1)
             A = torch.cdist(G, G, p=2) ** 2
-            A = A / A.var() # Normalized adjacency matrix
+            A = A / A.var()  # Normalized adjacency matrix
             D = torch.diag(A.sum(dim=1).pow(-0.5))
-            L = torch.matmul(torch.matmul(D, A), D) # Laplacian Matrix
+            L = torch.matmul(torch.matmul(D, A), D)  # Laplacian Matrix
             I = torch.eye(self.n, self.n).to(self.args.device)
-            P = torch.linalg.inv(I - self.args.alpha * L) # Propagator Matrix
+            P = torch.linalg.inv(I - self.args.alpha * L)  # Propagator Matrix
             x = torch.matmul(P, G)
             if update == 'inner':
                 x = x[:self.args.n_ways*self.args.k_shots]
@@ -713,13 +723,19 @@ class CDecoder(nn.Module):
                     nn.Linear(latent_dim, 25*c_hid),
                     act_fn()
                 )
-                a1 = 10; a2 = 21; a3 = 42; a4 = 84
+                a1 = 10
+                a2 = 21
+                a3 = 42
+                a4 = 84
             elif self.dataset == 'cifarfs':
                 self.linear = nn.Sequential(
                     nn.Linear(latent_dim, 4*c_hid),
                     act_fn()
                 )
-                a1 = 4; a2 = 8; a3 = 16; a4 = 32
+                a1 = 4
+                a2 = 8
+                a3 = 16
+                a4 = 32
 
             self.net = nn.Sequential(
 
@@ -809,10 +825,10 @@ class Classifier_VAE(nn.Module):
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
-        else: 
+                                       base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
+        else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args, flag=False)
+                                    base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args, flag=False)
 
         self.classifier = nn.Sequential(
             nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
@@ -1170,7 +1186,7 @@ class ResNet12Backbone(nn.Module):
             x = self.layer3(x)
             x = self.layer4(x)
             x = self.avgpool(x)
-            
+
         return x
 
 
@@ -1183,6 +1199,7 @@ def conv3x3wrn(in_planes, out_planes, stride=1):
         padding=1,
         bias=True,
     )
+
 
 def conv_init(m):
     classname = m.__class__.__name__
@@ -1199,10 +1216,12 @@ class wide_basic(torch.nn.Module):
     def __init__(self, in_planes, planes, dropout_rate, stride=1):
         super(wide_basic, self).__init__()
         self.bn1 = torch.nn.BatchNorm2d(in_planes)
-        self.conv1 = torch.nn.Conv2d(in_planes, planes, kernel_size=3, padding=1, bias=True)
+        self.conv1 = torch.nn.Conv2d(
+            in_planes, planes, kernel_size=3, padding=1, bias=True)
         self.dropout = torch.nn.Dropout(p=dropout_rate)
         self.bn2 = torch.nn.BatchNorm2d(planes)
-        self.conv2 = torch.nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=True)
+        self.conv2 = torch.nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=True)
 
         self.shortcut = torch.nn.Sequential()
         if stride != 1 or in_planes != planes:
@@ -1236,9 +1255,12 @@ class WideResNet(torch.nn.Module):
         nStages = [16, 16*k, 32*k, 64*k]
 
         self.conv1 = conv3x3wrn(3, nStages[0])
-        self.layer1 = self._wide_layer(wide_basic, nStages[1], n, dropout_rate, stride=1)
-        self.layer2 = self._wide_layer(wide_basic, nStages[2], n, dropout_rate, stride=2)
-        self.layer3 = self._wide_layer(wide_basic, nStages[3], n, dropout_rate, stride=2)
+        self.layer1 = self._wide_layer(
+            wide_basic, nStages[1], n, dropout_rate, stride=1)
+        self.layer2 = self._wide_layer(
+            wide_basic, nStages[2], n, dropout_rate, stride=2)
+        self.layer3 = self._wide_layer(
+            wide_basic, nStages[3], n, dropout_rate, stride=2)
         self.bn1 = torch.nn.BatchNorm2d(nStages[3], momentum=0.9)
 
     def _wide_layer(self, block, planes, num_blocks, dropout_rate, stride):
