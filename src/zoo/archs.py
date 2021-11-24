@@ -564,7 +564,7 @@ class TADCEncoder(nn.Module):
                 nn.Conv2d(c_hid, c_hid, kernel_size=3,
                           padding=1, stride=(2, 2)),
                 nn.BatchNorm2d(c_hid),
-                act_fn()  # 2
+                act_fn()  # 2 #check
             )
             self.h1 = nn.Linear(4*c_hid, latent_dim)
             self.h2 = nn.Linear(4*c_hid, latent_dim)
