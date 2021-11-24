@@ -75,16 +75,10 @@ if args.task_adapt == 'True':
 elif args.task_adapt == 'False':
     args.task_adapt = False
 
-if args.pretrained[0] == 'True':
-    args.pretrained[0] = True
-elif args.pretrained[0] == 'False':
-    args.pretrained[0] = False
-
-
 # wandb.config.update(args)
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
-train_tasks, valid_tasks, test_tasks, _, backbone = setup(
+_, _, test_tasks, _ = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, task_adapt_fn=args.task_adapt_fn, args=args)
 reconst_loss = nn.MSELoss(reduction='none')
 if args.order == False:
@@ -110,7 +104,7 @@ for model_name in os.listdir(args.model_path):
         model = learner.clone()
         #tetask = test_tasks.sample()
         evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
-            tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args, backbone)
+            tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, False, args)
 
         # Logging per test-task losses and accuracies
         tmp = [i, evaluation_accuracy.item()]

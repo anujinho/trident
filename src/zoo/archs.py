@@ -379,13 +379,44 @@ class LVAE(nn.Module):
         return x, mu, log_var
 
 
+class GaussianParametrizer(nn.Module):
+    """ Linear mapper from Image features to mean and log-variance parameters of latent-space gaussian distribution. """
+
+    def __init__(self,
+                 latent_dim: int,
+                 feature_dim: int,
+                 args,
+                 act_fn: object = nn.ReLU):
+        """
+        Inputs:
+            - latent_dim : Dimensionality of latent representation z
+            - dataset: name of the dataset
+            - feature_dim: dimensionality of the input feature
+            - act_fn : Activation function used throughout the network (if at all)
+        """
+        super(GaussianParametrizer, self).__init__()
+        
+        self.args = args
+        
+        if (args.dataset == 'omniglot') or (args.dataset == 'cifarfs'):
+            self.h1 = nn.Linear(feature_dim, latent_dim)
+            self.h2 = nn.Linear(feature_dim, latent_dim)
+        elif (args.dataset == 'miniimagenet') or (args.dataset == 'tiered'):
+            self.h1 = nn.Linear(feature_dim, latent_dim)
+            self.h2 = nn.Linear(feature_dim, latent_dim)
+
+    def forward(self, x):
+        mu = self.h1(x)
+        log_var = self.h2(x)
+        return mu, log_var
+
+
 class CEncoder(nn.Module):
-    """ Convolutional Encoder to transform an input image into a latent-space gaussian distribution parametrized by its mean and log-variance. """
+    """ Convolutional Encoder to transform an input image into its flattened feature embedding. """
 
     def __init__(self,
                  num_input_channels: int,
                  base_channel_size: int,
-                 latent_dim: int,
                  dataset: str,
                  args,
                  flag,
@@ -394,7 +425,6 @@ class CEncoder(nn.Module):
         Inputs:
             - num_input_channels : Number of input channels of the image
             - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
-            - latent_dim : Dimensionality of latent representation z
             - dataset: name of the dataset
             - act_fn : Activation function used throughout the encoder network
         """
@@ -426,104 +456,46 @@ class CEncoder(nn.Module):
 
                 nn.Flatten()
             )
-            self.h1 = nn.Linear(4*c_hid, latent_dim)
-            self.h2 = nn.Linear(4*c_hid, latent_dim)
 
-        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            if flag == True:
-                self.net = nn.Sequential(
-                    nn.Conv2d(num_input_channels, c_hid,
-                              kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+        elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
+            self.net = nn.Sequential(
+                nn.Conv2d(num_input_channels, c_hid,
+                            kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 1x1 # 5 x 5
-                    nn.Flatten()
-                )
-                if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                    self.h1 = nn.Linear(c_hid*25, latent_dim)
-                    self.h2 = nn.Linear(c_hid*25, latent_dim)
-                elif dataset == 'cifarfs':
-                    self.h1 = nn.Linear(c_hid*4, latent_dim)
-                    self.h2 = nn.Linear(c_hid*4, latent_dim)
-
-            elif flag == False:
-                if args.pretrained[0] == True:
-                    #self.net = Lambda(lambda x: x)
-                    self.h1 = nn.Linear(args.pretrained[2], latent_dim)
-                    self.h2 = nn.Linear(args.pretrained[2], latent_dim)
-
-                elif args.pre_trained[0] == False:
-                    self.net = nn.Sequential(
-                        nn.Conv2d(num_input_channels, c_hid,
-                                  kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
-
-                        # nn.ZeroPad2d(conv_padding),
-                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 9x9 # 21 x 21
-
-                        # nn.ZeroPad2d(conv_padding),
-                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2),  # 3x3 # 10 x 10
-
-                        # nn.ZeroPad2d(conv_padding),
-                        nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(c_hid),
-                        act_fn(),
-                        nn.MaxPool2d(2)  # 1x1 # 5 x 5
-                    )
-                    if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                        self.h1 = nn.Linear(c_hid*25, latent_dim)
-                        self.h2 = nn.Linear(c_hid*25, latent_dim)
-                    elif dataset == 'cifarfs':
-                        self.h1 = nn.Linear(c_hid*4, latent_dim)
-                        self.h2 = nn.Linear(c_hid*4, latent_dim)
-
-            # self.h1 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))  # for maxpool(2)
-            # self.h2 = nn.Sequential(nn.Linear(c_hid*25, c_hid*25//2), nn.Linear(c_hid*25//2, latent_dim))
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 1x1 # 5 x 5
+                nn.Flatten()
+            )
 
     def forward(self, x):
-        if self.flag or ((self.flag == False) and (self.args.pretrained[0] == False)):
-            x = self.net(x)
-        else:
-            x = x
-        mu = self.h1(x)
-        log_var = self.h2(x)
-        return mu, log_var
+        x = self.net(x)
+        return x
 
 
 class TADCEncoder(nn.Module):
-    """ Convolutional Encoder to transform an input image into a latent-space gaussian distribution parametrized by its mean and log-variance, 
-    with the added functionality of the distributions being task/episode aware. """
+    """ Convolutional Encoder to transform an input image into its task/episode aware feature embedding. """
 
     def __init__(self,
                  num_input_channels: int,
                  base_channel_size: int,
-                 latent_dim: int,
                  dataset: str,
                  task_adapt_fn: str,
                  args,
@@ -532,7 +504,6 @@ class TADCEncoder(nn.Module):
         Inputs:
             - num_input_channels : Number of input channels of the image
             - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
-            - latent_dim : Dimensionality of latent representation z
             - dataset: name of the dataset
             - task_adapt_fn: EAEN (eaen) or Kernel Smoothing (gks)
             - args: dict of arguments
@@ -564,51 +535,35 @@ class TADCEncoder(nn.Module):
                 nn.Conv2d(c_hid, c_hid, kernel_size=3,
                           padding=1, stride=(2, 2)),
                 nn.BatchNorm2d(c_hid),
-                act_fn()  # 2 #check
+                act_fn()  # 2 
             )
-            self.h1 = nn.Linear(4*c_hid, latent_dim)
-            self.h2 = nn.Linear(4*c_hid, latent_dim)
+        
+        elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
+            self.net = nn.Sequential(
+                nn.Conv2d(num_input_channels, c_hid,
+                            kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-        elif (dataset == 'mini_imagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            if args.pretrained[0] == True:
-                self.h1 = nn.Sequential(nn.Linear(
-                    640*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
-                self.h2 = nn.Sequential(nn.Linear(
-                    640*25, 8000), nn.Linear(8000, 1000), nn.Linear(1000, latent_dim))
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-            elif args.pre_trained[0] == False:
-                self.net = nn.Sequential(
-                    nn.Conv2d(num_input_channels, c_hid,
-                              kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
-
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
-
-                    # nn.ZeroPad2d(conv_padding),
-                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(c_hid),
-                    act_fn(),
-                    nn.MaxPool2d(2)  # 1x1 # 5 x 5
-                )
-
-                if (dataset == 'mini_imagenet') or (dataset == 'tiered'):
-                    self.h1 = nn.Linear(c_hid*25, latent_dim)
-                    self.h2 = nn.Linear(c_hid*25, latent_dim)
-                elif dataset == 'cifarfs':
-                    self.h1 = nn.Linear(c_hid*4, latent_dim)
-                    self.h2 = nn.Linear(c_hid*4, latent_dim)
+                # nn.ZeroPad2d(conv_padding),
+                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+                nn.MaxPool2d(2)  # 1x1 # 5 x 5
+            )
 
         self.n = args.n_ways * (args.k_shots + args.q_shots)
         self.eaen = nn.Sequential(
@@ -629,10 +584,7 @@ class TADCEncoder(nn.Module):
         )
 
     def forward(self, x, update: str):
-        if self.args.pretrained[0] == False:
-            x = self.net(x)
-        elif self.args.pretrained[0] == True:
-            x = x
+        x = self.net(x)
 
         # Task aware embeddings
 
@@ -662,9 +614,7 @@ class TADCEncoder(nn.Module):
             elif update == 'outer':
                 x = x[self.args.n_ways*self.args.k_shots:]
 
-        mu = self.h1(x)
-        log_var = self.h2(x)
-        return mu, log_var
+        return x
 
 
 class CDecoder(nn.Module):
@@ -717,8 +667,8 @@ class CDecoder(nn.Module):
                 nn.Sigmoid()
             )
 
-        elif (self.dataset == 'mini_imagenet') or (self.dataset == 'cifarfs') or (self.dataset == 'tiered'):
-            if (self.dataset == 'mini_imagenet') or (self.dataset == 'tiered'):
+        elif (self.dataset == 'miniimagenet') or (self.dataset == 'cifarfs') or (self.dataset == 'tiered'):
+            if (self.dataset == 'miniimagenet') or (self.dataset == 'tiered'):
                 self.linear = nn.Sequential(
                     nn.Linear(latent_dim, 25*c_hid),
                     act_fn()
@@ -768,7 +718,7 @@ class CDecoder(nn.Module):
         if (self.dataset == 'omniglot') or (self.dataset == 'cifarfs'):
             x = self.linear(x)
             x = x.reshape(x.shape[0], -1, 2, 2)
-        elif (self.dataset == 'mini_imagenet') or (self.dataset == 'tiered'):
+        elif (self.dataset == 'miniimagenet') or (self.dataset == 'tiered'):
             #x = x.unsqueeze(-1).unsqueeze(-1)
             x = self.linear(x)
             x = x.reshape(x.shape[0], -1, 5, 5)
@@ -814,25 +764,30 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim, n_ways, dataset, task_adapt, task_adapt_fn, args, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, dataset, task_adapt, task_adapt_fn, args, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
-        self.latent_dim = latent_dim
+        self.latent_dim_l = latent_dim_l
+        self.latent_dim_s = latent_dim_s
         self.classes = n_ways
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
+
+        fcoeff = 25 if (dataset == 'miniimagenet') or (dataset == 'tiered') else 4
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
                                        base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                    base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args, flag=False)
-
+                                    base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
+        
+        self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_l, feature_dim=(fcoeff+self.latent_dim_s), args=args)
+        
         self.classifier = nn.Sequential(
-            nn.Linear(self.latent_dim, self.latent_dim//2), act_fn(),
-            nn.Linear(self.latent_dim//2, self.classes))
+            nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn(),
+            nn.Linear(self.latent_dim_l//2, self.classes))
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -842,14 +797,15 @@ class Classifier_VAE(nn.Module):
         else:
             return mu
 
-    def forward(self, x, update):
+    def forward(self, x, z_s, update):
         if self.task_adapt:
-            mu, log_var = self.encoder(x, update)
+            x = self.encoder(x, update)
         else:
-            mu, log_var = self.encoder(x)
-        z = self.reparameterize(mu, log_var)
-        logits = self.classifier(z)
-        return logits, mu, log_var, z
+            x = self.encoder(x)
+        mu_l, log_var_l = self.self.gaussian_parametrizer(torch.cat([x, z_s]), dim=1)
+        z_l = self.reparameterize(mu_l, log_var_l)
+        logits = self.classifier(z_l)
+        return logits, mu_l, log_var_l, z_l
 
 
 class CCVAE(nn.Module):
@@ -868,15 +824,20 @@ class CCVAE(nn.Module):
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
         self.args = args
+        
+        fcoeff = 25 if (dataset == 'miniimagenet') or (dataset == 'tiered') else 4
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset, args=args, flag=True)
+                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset, args=args)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
             self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=self.args)
+        
+        self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_s, feature_dim=fcoeff, args=args)
+
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -887,33 +848,23 @@ class CCVAE(nn.Module):
             return mu
 
     def forward(self, x, update):
-        if self.args.pretrained[0] == False:
-            logits, mu_l, log_var_l, z_l = self.classifier_vae(x, update)
-            if self.task_adapt & (update == 'inner'):
-                x = x[:self.args.n_ways*self.args.k_shots]
-            elif self.task_adapt & (update == 'outer'):
-                x = x[self.args.n_ways*self.args.k_shots:]
-            else:
-                x = x
-            mu_s, log_var_s = self.encoder(x)
+        if self.task_adapt & (update == 'inner'):
+            x = x[:self.args.n_ways*self.args.k_shots]
+            x = self.encoder(x)
+            mu_s, log_var_s = self.gaussian_parametrizer(x)
             z_s = self.reparameterize(mu_s, log_var_s)
-            #x = self.decoder(torch.cat([z_s, mu_l], dim=1))
-            x = self.decoder(torch.cat([z_s, z_l], dim=1))
-
-        elif self.args.pretrained[0] == True:
-            logits, mu_l, log_var_l, z_l = self.classifier_vae(x[0], update)
-            if self.task_adapt & (update == 'inner'):
-                x = x[1][:self.args.n_ways*self.args.k_shots]
-            elif self.task_adapt & (update == 'outer'):
-                x = x[1][self.args.n_ways*self.args.k_shots:]
-            else:
-                x = x[1]
-            mu_s, log_var_s = self.encoder(x)
+        elif self.task_adapt & (update == 'outer'):
+            x = x[self.args.n_ways*self.args.k_shots:]
+            x = self.encoder(x)
+            mu_s, log_var_s = self.gaussian_parametrizer(x)
             z_s = self.reparameterize(mu_s, log_var_s)
-            #x = self.decoder(torch.cat([z_s, mu_l], dim=1))
-            x = self.decoder(torch.cat([z_s, z_l], dim=1))
+        else:
+            x = x
+        
+        logits, mu_l, log_var_l, z_l = self.classifier_vae(x, z_s, update)
+        x = self.decoder(torch.cat([z_s, z_l], dim=1))
 
-        return x, logits, mu_l, log_var_l, mu_s, log_var_s
+        return x, logits, mu_l, log_var_l, mu_s, log_var_s, z_s
 
 
 def conv3x3(in_planes, out_planes, stride=1):
