@@ -1,0 +1,22 @@
+{
+"dataset": "tiered",
+"root": "../../dataset",
+"model_path": "/home/nfs/anujsingh/meta_lrng/files/temp2/learning_to_meta-learn/logs/DELPO_tiered_5-way_10-shot_15-queries/models-1-eaen",
+"n_ways": 5,
+"k_shots": 10,
+"q_shots": 15,
+"inner_adapt_steps_test": 5,
+"inner_lr": 0.0015,
+"meta_lr": 0.00015,
+"wt_ce": 150,
+"klwt": "False",
+"rec_wt": 0.01,
+"beta_l": 1,
+"beta_s": 1,
+"task_adapt": "True",
+"task_adapt_fn": "eaen",
+"alpha": 0.1,
+"experiment": "exp1-eaen",
+"order": "False",
+"device": "cuda"
+}
