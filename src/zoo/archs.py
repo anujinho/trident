@@ -777,10 +777,10 @@ class Classifier_VAE(nn.Module):
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
-                                       base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
+                                       base_channel_size=self.base_channels, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                    base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
+                                    base_channel_size=self.base_channels, dataset=dataset, args=args)
         
         self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
         
@@ -827,7 +827,7 @@ class CCVAE(nn.Module):
         fcoeff = 25 if (dataset == 'miniimagenet') or (dataset == 'tiered') else 4
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=self.latent_dim_s, dataset=self.dataset, args=args)
+                                base_channel_size=self.base_channels, dataset=self.dataset, args=args)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
