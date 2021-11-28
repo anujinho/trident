@@ -872,7 +872,7 @@ class CCVAE(nn.Module):
 
         x = self.decoder(torch.cat([z_s, z_l], dim=1))
 
-        return x, logits, mu_l, log_var_l, mu_s, log_var_s, z_s
+        return x, logits, mu_l, log_var_l, mu_s, log_var_s
 
 
 def conv3x3(in_planes, out_planes, stride=1):
