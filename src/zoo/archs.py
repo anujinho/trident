@@ -804,7 +804,7 @@ class Classifier_VAE(nn.Module):
         else:
             x = self.encoder(x)
         mu_l, log_var_l = self.gaussian_parametrizer(
-            torch.cat([x, z_s]), dim=1)
+            torch.cat([x, z_s], dim=1))
         z_l = self.reparameterize(mu_l, log_var_l)
         logits = self.classifier(z_l)
         return logits, mu_l, log_var_l, z_l
@@ -829,6 +829,8 @@ class CCVAE(nn.Module):
 
         fcoeff = 25 if (dataset == 'miniimagenet') or (
             dataset == 'tiered') else 4
+        fsize = fcoeff*self.base_channels
+
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, dataset=self.dataset, args=args)
@@ -840,7 +842,7 @@ class CCVAE(nn.Module):
             in_channels=self.in_channels, base_channels=self.base_channels, latent_dim_l=self.latent_dim_l, latent_dim_s=self.latent_dim_s, n_ways=self.classes, dataset=dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=self.args)
 
         self.gaussian_parametrizer = GaussianParametrizer(
-            latent_dim=self.latent_dim_s, feature_dim=fcoeff, args=args)
+            latent_dim=self.latent_dim_s, feature_dim=fsize, args=args)
 
     def reparameterize(self, mu, logvar):
         if self.training:
