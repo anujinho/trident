@@ -98,7 +98,7 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args, backbone):
+def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args):
     data, labels = task
     if args.dataset == 'miniimagenet':
         data, labels = data.to(device) / 255.0, labels.to(device)

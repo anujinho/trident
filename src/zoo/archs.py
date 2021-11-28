@@ -419,7 +419,6 @@ class CEncoder(nn.Module):
                  base_channel_size: int,
                  dataset: str,
                  args,
-                 flag,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -431,7 +430,6 @@ class CEncoder(nn.Module):
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
-        self.flag = flag
         if dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
@@ -761,7 +759,7 @@ class CVAE(nn.Module):
 
 class Classifier_VAE(nn.Module):
     """ Module for a Convolutional-VAE: Convolutional Encoder + Linear Classifier that 
-    transforms an input image into latent-space gaussian distribution, and uses z_c drawn 
+    transforms an input image into latent-space gaussian distribution, and uses z_l drawn 
     from this distribution to produce logits for classification. """
 
     def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, dataset, task_adapt, task_adapt_fn, args, act_fn: object = nn.ReLU):
@@ -775,6 +773,7 @@ class Classifier_VAE(nn.Module):
         self.task_adapt_fn = task_adapt_fn
 
         fcoeff = 25 if (dataset == 'miniimagenet') or (dataset == 'tiered') else 4
+        fsize = fcoeff*self.base_channels
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
@@ -783,7 +782,7 @@ class Classifier_VAE(nn.Module):
             self.encoder = CEncoder(num_input_channels=self.in_channels,
                                     base_channel_size=self.base_channels, latent_dim=self.latent_dim, dataset=dataset, args=args)
         
-        self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_l, feature_dim=(fcoeff+self.latent_dim_s), args=args)
+        self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
         
         self.classifier = nn.Sequential(
             nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn(),
@@ -849,15 +848,17 @@ class CCVAE(nn.Module):
 
     def forward(self, x, update):
         if self.task_adapt & (update == 'inner'):
-            x = x[:self.args.n_ways*self.args.k_shots]
-            x = self.encoder(x)
-            mu_s, log_var_s = self.gaussian_parametrizer(x)
+            xs = x[:self.args.n_ways*self.args.k_shots]
+            xs = self.encoder(xs)
+            mu_s, log_var_s = self.gaussian_parametrizer(xs)
             z_s = self.reparameterize(mu_s, log_var_s)
+            del xs
         elif self.task_adapt & (update == 'outer'):
-            x = x[self.args.n_ways*self.args.k_shots:]
-            x = self.encoder(x)
-            mu_s, log_var_s = self.gaussian_parametrizer(x)
+            xs = x[self.args.n_ways*self.args.k_shots:]
+            xs = self.encoder(xs)
+            mu_s, log_var_s = self.gaussian_parametrizer(xs)
             z_s = self.reparameterize(mu_s, log_var_s)
+            del xs
         else:
             x = x
         
