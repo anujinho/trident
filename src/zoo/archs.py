@@ -853,23 +853,20 @@ class CCVAE(nn.Module):
             return mu
 
     def forward(self, x, update):
-        xs = self.encoder(x)
+        
+        if self.task_adapt & (update == 'inner'):
+            xs = x[:self.args.n_ways*self.args.k_shots]
+        elif self.task_adapt & (update == 'outer'):
+            xs = x[self.args.n_ways*self.args.k_shots:]
+        else:
+            xs = x
+        xs = self.encoder(xs)
         mu_s, log_var_s = self.gaussian_parametrizer(xs)
         z_s = self.reparameterize(mu_s, log_var_s)
         del xs
 
         logits, mu_l, log_var_l, z_l = self.classifier_vae(x, z_s, update)
         
-        if self.task_adapt & (update == 'inner'):
-            x = x[:self.args.n_ways*self.args.k_shots]
-            z_s = z_s[:self.args.n_ways*self.args.k_shots]
-        elif self.task_adapt & (update == 'outer'):
-            x = x[self.args.n_ways*self.args.k_shots:]
-            z_s = z_s[self.args.n_ways*self.args.k_shots:]
-        else:
-            x = x
-            z_s = z_s
-
         x = self.decoder(torch.cat([z_s, z_l], dim=1))
 
         return x, logits, mu_l, log_var_l, mu_s, log_var_s
