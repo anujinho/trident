@@ -803,7 +803,7 @@ class Classifier_VAE(nn.Module):
             x = self.encoder(x, update)
         else:
             x = self.encoder(x)
-        mu_l, log_var_l = self.self.gaussian_parametrizer(
+        mu_l, log_var_l = self.gaussian_parametrizer(
             torch.cat([x, z_s]), dim=1)
         z_l = self.reparameterize(mu_l, log_var_l)
         logits = self.classifier(z_l)
@@ -857,7 +857,7 @@ class CCVAE(nn.Module):
             xs = x[self.args.n_ways*self.args.k_shots:]
         else:
             xs = x
-        
+
         xs = self.encoder(xs)
         mu_s, log_var_s = self.gaussian_parametrizer(xs)
         z_s = self.reparameterize(mu_s, log_var_s)
