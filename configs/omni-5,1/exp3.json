@@ -10,7 +10,7 @@
 "inner_lr": 0.01,
 "meta_lr": 0.001,
 "meta_batch_size": 20,
-"iterations": 11000,
+"iterations": 50000,
 "wt_ce": 30,
 "klwt": "False",
 "rec_wt": 0.1,
