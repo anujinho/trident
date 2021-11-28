@@ -395,9 +395,9 @@ class GaussianParametrizer(nn.Module):
             - act_fn : Activation function used throughout the network (if at all)
         """
         super(GaussianParametrizer, self).__init__()
-        
+
         self.args = args
-        
+
         if (args.dataset == 'omniglot') or (args.dataset == 'cifarfs'):
             self.h1 = nn.Linear(feature_dim, latent_dim)
             self.h2 = nn.Linear(feature_dim, latent_dim)
@@ -458,7 +458,7 @@ class CEncoder(nn.Module):
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
-                            kernel_size=3, padding=1),
+                          kernel_size=3, padding=1),
                 nn.BatchNorm2d(c_hid),
                 act_fn(),
                 nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -533,13 +533,13 @@ class TADCEncoder(nn.Module):
                 nn.Conv2d(c_hid, c_hid, kernel_size=3,
                           padding=1, stride=(2, 2)),
                 nn.BatchNorm2d(c_hid),
-                act_fn()  # 2 
+                act_fn()  # 2
             )
-        
+
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
-                            kernel_size=3, padding=1),
+                          kernel_size=3, padding=1),
                 nn.BatchNorm2d(c_hid),
                 act_fn(),
                 nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -772,7 +772,8 @@ class Classifier_VAE(nn.Module):
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
 
-        fcoeff = 25 if (dataset == 'miniimagenet') or (dataset == 'tiered') else 4
+        fcoeff = 25 if (dataset == 'miniimagenet') or (
+            dataset == 'tiered') else 4
         fsize = fcoeff*self.base_channels
 
         if self.task_adapt:
@@ -781,9 +782,10 @@ class Classifier_VAE(nn.Module):
         else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
                                     base_channel_size=self.base_channels, dataset=dataset, args=args)
-        
-        self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
-        
+
+        self.gaussian_parametrizer = GaussianParametrizer(
+            latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
+
         self.classifier = nn.Sequential(
             nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn(),
             nn.Linear(self.latent_dim_l//2, self.classes))
@@ -801,7 +803,8 @@ class Classifier_VAE(nn.Module):
             x = self.encoder(x, update)
         else:
             x = self.encoder(x)
-        mu_l, log_var_l = self.self.gaussian_parametrizer(torch.cat([x, z_s]), dim=1)
+        mu_l, log_var_l = self.self.gaussian_parametrizer(
+            torch.cat([x, z_s]), dim=1)
         z_l = self.reparameterize(mu_l, log_var_l)
         logits = self.classifier(z_l)
         return logits, mu_l, log_var_l, z_l
@@ -823,8 +826,9 @@ class CCVAE(nn.Module):
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
         self.args = args
-        
-        fcoeff = 25 if (dataset == 'miniimagenet') or (dataset == 'tiered') else 4
+
+        fcoeff = 25 if (dataset == 'miniimagenet') or (
+            dataset == 'tiered') else 4
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, dataset=self.dataset, args=args)
@@ -833,10 +837,10 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            self.in_channels, self.base_channels, self.latent_dim_l, self.classes, dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=self.args)
-        
-        self.gaussian_parametrizer = GaussianParametrizer(latent_dim=self.latent_dim_s, feature_dim=fcoeff, args=args)
+            in_channels=self.in_channels, base_channels=self.base_channels, latent_dim_l=self.latent_dim_l, latent_dim_s=self.latent_dim_s, n_ways=self.classes, dataset=dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=self.args)
 
+        self.gaussian_parametrizer = GaussianParametrizer(
+            latent_dim=self.latent_dim_s, feature_dim=fcoeff, args=args)
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -861,7 +865,7 @@ class CCVAE(nn.Module):
             del xs
         else:
             x = x
-        
+
         logits, mu_l, log_var_l, z_l = self.classifier_vae(x, z_s, update)
         x = self.decoder(torch.cat([z_s, z_l], dim=1))
 
