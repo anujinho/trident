@@ -488,6 +488,69 @@ class CEncoder(nn.Module):
         return x
 
 
+class TAFE(nn.Module):
+    """ Transductive Attention based Feature Extractor that uses 1x1 Convs as Query, Key and Value extractors
+    from per Channel Image feature maps and then uses Attention to finally create per channel transductive-masks. """
+
+    def __init__(self,
+                 args,
+                 act_fn: object = nn.ReLU):
+        """
+        Inputs:
+            - args: dict of arguments
+            - act_fn : Activation function used throughout the encoder network
+        """
+
+        super(TAFE, self).__init__()
+        self.args = args
+        self.act_fn = act_fn
+        self.n = args.n_ways * (args.k_shots + args.q_shots)
+        self.fe1 = nn.Conv2d(in_channels=self.n, out_channels=64, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        self.fe2 = nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        
+        # Query, Key and Value extractors as 1x1 Convs
+        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+
+    def forward(self, x, update:str):
+        
+        # Inter-Image convolutional comparisons for feature extraction 
+        x = x.permute(1,0,2,3)
+        x = self.fe1(x)
+        x = self.act_fn(x)
+        x = self.fe2(x)
+        x = self.act_fn(x)
+
+        # Preparing Q, K, V
+        xq = self.f_q(x)
+        xk = self.f_k(x)
+        xv = self.f_v(x)
+        xq = xq.squeeze()
+        xk = xk.squeeze()
+        xv = xv.squeeze()
+
+        # Attention Block
+        xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
+        xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
+        xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
+
+        weights = torch.mm(xq, xk.transpose(0,1))
+        softmax = nn.Softmax(dim=-1)
+        weights = softmax(weights)
+        masks = torch.mm(weights, xv)
+        del xq, xk, xv
+        
+        # Transductive Mask transformed input
+        masks = masks.reshape(-1, x.shape[2], x.shape[3])
+        if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots] * masks
+        elif update == 'outer':
+            x = x[self.args.n_ways*self.args.k_shots:] * masks
+        
+        x = nn.Flatten()(x)
+
+
 class TADCEncoder(nn.Module):
     """ Convolutional Encoder to transform an input image into its task/episode aware feature embedding. """
 
@@ -581,6 +644,7 @@ class TADCEncoder(nn.Module):
             act_fn(),
         )
 
+
     def forward(self, x, update: str):
         x = self.net(x)
 
@@ -597,6 +661,10 @@ class TADCEncoder(nn.Module):
             elif update == 'outer':
                 x = x[self.args.n_ways*self.args.k_shots:] * G
             x = nn.Flatten()(x)
+
+        elif self.task_adapt_fn == 'tafe':
+            tafe = TAFE()
+            x = tafe(x)
 
         elif self.task_adapt_fn == 'gks':
             G = x.reshape(self.n, -1)
