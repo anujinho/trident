@@ -503,52 +503,81 @@ class TAFE(nn.Module):
 
         super(TAFE, self).__init__()
         self.args = args
-        self.act_fn = act_fn
         self.n = args.n_ways * (args.k_shots + args.q_shots)
-        self.fe1 = nn.Conv2d(in_channels=self.n, out_channels=64, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
-        self.fe2 = nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        # self.fe = nn.Sequential(
+        #     nn.Conv2d(in_channels=self.n, out_channels=64, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
+        #     act_fn(),
+        #     nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
+        #     act_fn()
+        # )
+        
+        # # Query, Key and Value extractors as 1x1 Convs
+        # self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        # self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        # self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+
+        self.fe = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+                self.n, 1), stride=(1, 1), padding='valid', bias=False),
+            act_fn(),
+
+            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False),
+            act_fn())
         
         # Query, Key and Value extractors as 1x1 Convs
-        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
-        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
-        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
+        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
+        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
 
+    
+    
     def forward(self, x, update:str):
         
-        # Inter-Image convolutional comparisons for feature extraction 
-        x = x.permute(1,0,2,3)
-        x = self.fe1(x)
-        x = self.act_fn(x)
-        x = self.fe2(x)
-        x = self.act_fn(x)
+        G = x.permute(2, 3, 0, 1)
+        G = G.reshape(G.shape[0] * G.shape[1],
+                        G.shape[2], G.shape[3]).unsqueeze(dim=1)
+        G = self.fe(G)
+        xq = self.f_q(G)
+        xk = self.f_k(G)
+        xv = self.f_v(G)
+        xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+        xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+        xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
 
-        # Preparing Q, K, V
-        xq = self.f_q(x)
-        xk = self.f_k(x)
-        xv = self.f_v(x)
-        xq = xq.squeeze()
-        xk = xk.squeeze()
-        xv = xv.squeeze()
+        # # Inter-Image convolutional comparisons for feature extraction 
+        # g = x.permute(1,0,2,3)
+        # g = self.fe(g)
+
+        # # Preparing Q, K, V
+        # xq = self.f_q(g)
+        # xk = self.f_k(g)
+        # xv = self.f_v(g)
+        # xq = xq.squeeze()
+        # xk = xk.squeeze()
+        # xv = xv.squeeze()
 
         # Attention Block
         xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
         xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
         xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
 
-        weights = torch.mm(xq, xk.transpose(0,1))
+        g = torch.mm(xq, xk.transpose(0,1))
         softmax = nn.Softmax(dim=-1)
-        weights = softmax(weights)
-        masks = torch.mm(weights, xv)
-        del xq, xk, xv
+        g = softmax(g)
+        g = torch.mm(g, xv)
+        #del xq, xk, xv
         
         # Transductive Mask transformed input
-        masks = masks.reshape(-1, x.shape[2], x.shape[3])
+        g = g.reshape(-1, x.shape[2], x.shape[3])
         if update == 'inner':
-                x = x[:self.args.n_ways*self.args.k_shots] * masks
+            x = x[:self.args.n_ways*self.args.k_shots] * g
         elif update == 'outer':
-            x = x[self.args.n_ways*self.args.k_shots:] * masks
+            x = x[self.args.n_ways*self.args.k_shots:] * g
         
         x = nn.Flatten()(x)
+
+        return x
 
 
 class TADCEncoder(nn.Module):
@@ -627,22 +656,39 @@ class TADCEncoder(nn.Module):
             )
 
         self.n = args.n_ways * (args.k_shots + args.q_shots)
-        self.eaen = nn.Sequential(
+        if self.task_adapt_fn == 'eaen':
+            self.eaen = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+                    self.n, 1), stride=(1, 1), padding='valid', bias=False),
+                # P
+                act_fn(),
+
+                nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+                    1, 1), stride=(1, 1), padding='valid', bias=False),
+                # Z
+                act_fn(),
+
+                nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                    1, 1), stride=(1, 1), padding='valid', bias=False),
+                # F
+                act_fn(),
+            )
+
+        #self.tafe = TAFE(self.args)
+        elif self.task_adapt_fn == 'tafe':
+            self.fe = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
                 self.n, 1), stride=(1, 1), padding='valid', bias=False),
-            # P
             act_fn(),
 
             nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
                 1, 1), stride=(1, 1), padding='valid', bias=False),
-            # Z
-            act_fn(),
-
-            nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-                1, 1), stride=(1, 1), padding='valid', bias=False),
-            # F
-            act_fn(),
-        )
+            act_fn())
+        
+            # Query, Key and Value extractors as 1x1 Convs
+            self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
+            self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
+            self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
 
 
     def forward(self, x, update: str):
@@ -663,8 +709,38 @@ class TADCEncoder(nn.Module):
             x = nn.Flatten()(x)
 
         elif self.task_adapt_fn == 'tafe':
-            tafe = TAFE()
-            x = tafe(x)
+            #x = self.tafe(x, update)
+            
+            G = x.permute(2, 3, 0, 1)
+            G = G.reshape(G.shape[0] * G.shape[1],
+                            G.shape[2], G.shape[3]).unsqueeze(dim=1)
+            G = self.fe(G)
+            xq = self.f_q(G)
+            xk = self.f_k(G)
+            xv = self.f_v(G)
+            xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+
+            # Attention Block
+            xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
+            xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
+            xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
+
+            G = torch.mm(xq, xk.transpose(0,1))
+            softmax = nn.Softmax(dim=-1)
+            G = softmax(G)
+            G = torch.mm(G, xv)
+            #del xq, xk, xv
+            
+            # Transductive Mask transformed input
+            G = G.reshape(-1, x.shape[2], x.shape[3])
+            if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots] * G
+            elif update == 'outer':
+                x = x[self.args.n_ways*self.args.k_shots:] * G
+            
+            x = nn.Flatten()(x)
 
         elif self.task_adapt_fn == 'gks':
             G = x.reshape(self.n, -1)
