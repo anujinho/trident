@@ -727,7 +727,7 @@ class TADCEncoder(nn.Module):
             xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
             xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
 
-            G = torch.mm(xq, xk.transpose(0,1))
+            G = torch.mm(xq, xk.transpose(0,1)/xk.shape[1]**0.5)
             softmax = nn.Softmax(dim=-1)
             G = softmax(G)
             G = torch.mm(G, xv)
