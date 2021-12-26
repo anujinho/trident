@@ -5,12 +5,9 @@
 "n_ways": 5,
 "k_shots": 5,
 "q_shots": 10,
-"inner_adapt_steps_train": 5,
 "inner_adapt_steps_test": 5,
 "inner_lr": 0.0015,
 "meta_lr": 0.00015,
-"meta_batch_size": 20,
-"iterations": 100000,
 "wt_ce": 150,
 "klwt": "False",
 "rec_wt": 0.01,
@@ -21,7 +18,5 @@
 "alpha": 0.1,
 "experiment": "exp5-tafe",
 "order": "False",
-"device": "cuda",
-"resume": "No",
-"iter_resume": 0
+"device": "cuda"
 }
