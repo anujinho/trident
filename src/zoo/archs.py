@@ -419,6 +419,7 @@ class CEncoder(nn.Module):
                  base_channel_size: int,
                  dataset: str,
                  args,
+                 pretrain_flag: bool,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -430,6 +431,8 @@ class CEncoder(nn.Module):
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
+        self.pretrain_flag = pretrain_flag
+
         if dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
@@ -456,32 +459,44 @@ class CEncoder(nn.Module):
             )
 
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            self.net = nn.Sequential(
-                nn.Conv2d(num_input_channels, c_hid,
-                          kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+            if self.pretrain_flag == True:
+                self.net = ResNet12Backbone(
+                args, avg_pool=True)  # F => 16000; T => 640
+                weights = torch.load(args.pretrained[1], map_location='cpu')
+                self.net.load_state_dict(weights)
+                self.net.to(args.device)
+                if args.pretrained[2] == 'freeze':
+                    # Freeze the backbone
+                    for p in self.net.parameters():
+                        p.requires_grad = False
+                        
+            else:
+                self.net = nn.Sequential(
+                    nn.Conv2d(num_input_channels, c_hid,
+                            kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 1x1 # 5 x 5
-                nn.Flatten()
-            )
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 1x1 # 5 x 5
+                    nn.Flatten()
+                )
 
     def forward(self, x):
         x = self.net(x)
@@ -629,31 +644,43 @@ class TADCEncoder(nn.Module):
             )
 
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            self.net = nn.Sequential(
-                nn.Conv2d(num_input_channels, c_hid,
-                          kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+            if args.pretrained[0] == True:
+                self.net = ResNet12Backbone(
+                args, avg_pool=True)  # F => 16000; T => 640
+                weights = torch.load(args.pretrained[1], map_location='cpu')
+                self.net.load_state_dict(weights)
+                self.net.to(args.device)
+                if args.pretrained[2] == 'freeze':
+                    # Freeze the backbone
+                    for p in self.net.parameters():
+                        p.requires_grad = False
+                        
+            else:
+                self.net = nn.Sequential(
+                    nn.Conv2d(num_input_channels, c_hid,
+                            kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
-                # nn.ZeroPad2d(conv_padding),
-                nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-                nn.BatchNorm2d(c_hid),
-                act_fn(),
-                nn.MaxPool2d(2)  # 1x1 # 5 x 5
-            )
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                )
 
         self.n = args.n_ways * (args.k_shots + args.q_shots)
         if self.task_adapt_fn == 'eaen':
@@ -715,12 +742,19 @@ class TADCEncoder(nn.Module):
             G = G.reshape(G.shape[0] * G.shape[1],
                             G.shape[2], G.shape[3]).unsqueeze(dim=1)
             G = self.fe(G)
-            xq = self.f_q(G)
-            xq = nn.ReLU()(xq)
-            xk = self.f_k(G)
-            xk = nn.ReLU()(xk)
-            xv = self.f_v(G)
-            xv = nn.ReLU()(xv)
+
+            if (self.args.dataset == 'omniglot') or (self.args.dataset == 'tiered' and self.args.k_shots == 5):
+                xq = self.f_q(G)
+                xq = nn.ReLU()(xq)
+                xk = self.f_k(G)
+                xk = nn.ReLU()(xk)
+                xv = self.f_v(G)
+                xv = nn.ReLU()(xv)
+            else:
+                xq = self.f_q(G)
+                xk = self.f_k(G)
+                xv = self.f_v(G)
+
             xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
             xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
             xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
@@ -928,7 +962,7 @@ class Classifier_VAE(nn.Module):
                                        base_channel_size=self.base_channels, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                    base_channel_size=self.base_channels, dataset=dataset, args=args)
+                                    base_channel_size=self.base_channels, dataset=dataset, args=args, pretrain_flag=args.pretrained[0])
 
         self.gaussian_parametrizer = GaussianParametrizer(
             latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
@@ -980,7 +1014,7 @@ class CCVAE(nn.Module):
 
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, dataset=self.dataset, args=args)
+                                base_channel_size=self.base_channels, dataset=self.dataset, args=args, pretrain_flag=False)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
@@ -1275,20 +1309,13 @@ class ResNet12Backbone(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.args.pretrained[2] == 640:
-            x = self.layer1(x)
-            x = self.layer2(x)
-            x = self.layer3(x)
-            x = self.layer4(x)
-            x = self.avgpool(x)
-            x = self.flatten(x)
-            x = self.dropout(x)
-        elif self.args.pretrained[2] == 16000:
-            x = self.layer1(x)
-            x = self.layer2(x)
-            x = self.layer3(x)
-            x = self.layer4(x)
-            x = self.avgpool(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+        # x = self.flatten(x)
+        # x = self.dropout(x)
 
         return x
 
