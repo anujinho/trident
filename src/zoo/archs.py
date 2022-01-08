@@ -953,9 +953,12 @@ class Classifier_VAE(nn.Module):
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
 
-        fcoeff = 25 if (dataset == 'miniimagenet') or (
-            dataset == 'tiered') else 4
-        fsize = fcoeff*self.base_channels
+        if args.pretrained[0] == True:
+            fsize = 640
+        else:
+            fcoeff = 25 if (dataset == 'miniimagenet') or (
+                dataset == 'tiered') else 4
+            fsize = fcoeff*self.base_channels
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
