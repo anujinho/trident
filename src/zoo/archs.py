@@ -755,9 +755,9 @@ class TADCEncoder(nn.Module):
                 xk = self.f_k(G)
                 xv = self.f_v(G)
 
-            xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
-            xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
-            xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xq = xq.squeeze(dim=1).squeeze(dim=1).transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xk = xk.squeeze(dim=1).squeeze(dim=1).transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xv = xv.squeeze(dim=1).squeeze(dim=1).transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
 
             # Attention Block
             xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])

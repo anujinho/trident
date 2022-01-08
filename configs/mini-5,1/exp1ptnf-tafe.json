@@ -18,7 +18,7 @@
 "beta_l": 1,
 "beta_s": 1,
 "task_adapt": "True",
-"task_adapt_fn": "eaen",
+"task_adapt_fn": "tafe",
 "alpha": 0.1,
 "experiment": "exp1ptnf-tafe",
 "order": "False",
