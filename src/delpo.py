@@ -176,7 +176,8 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
 
     # Meta backpropagation of gradients
     for p in learner.parameters():
-        p.grad.data.mul_(1.0 / args.meta_batch_size)
+        if p.requires_grad == True:
+            p.grad.data.mul_(1.0 / args.meta_batch_size)
     opt.step()
 
     # Saving the Logs
