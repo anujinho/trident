@@ -29,10 +29,7 @@ class Profiler():
             # Create a writer object from csv module
             csv_writer = writer(write_obj)
             # Add contents of list as last row in the csv file
-            if mode == 'train':
-                csv_writer.writerows(row)
-            else:
-                csv_writer.writerow(row)
+            csv_writer.writerows(row)
 
     def log_data(self, data, epoch, mode1, mode2):
         self.path_data = self.path + '/' + mode1 + '_epoch-' + str(epoch) + '_' + mode2 + '.pt'
