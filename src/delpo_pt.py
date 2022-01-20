@@ -109,10 +109,14 @@ else:
 if args.order == False:
     profiler = Profiler('DELPO_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
                         args.n_ways, args.k_shots, args.q_shots), args.experiment)
+    folder = 'DELPO_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
+                        args.n_ways, args.k_shots, args.q_shots)
 
 elif args.order == True:
     profiler = Profiler('FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
         args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment)
+    folder = 'FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
+        args.dataset, args.n_ways, args.k_shots, args.q_shots)
 
 
 ## Training ##
@@ -170,10 +174,10 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         validation_loss, validation_accuracy = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
 
-    # Logging per validation-task losses and accuracies
-    tmp = [(iter*500)+batch, validation_accuracy.item()]
-    tmp = tmp + [a.item() for a in validation_loss.values()]
-    val_losses.append(tmp)
+        # Logging per validation-task losses and accuracies
+        tmp = [(iter*500)+batch, validation_accuracy.item()]
+        tmp = tmp + [a.item() for a in validation_loss.values()]
+        val_losses.append(tmp)
 
     # wandb.log(dict({f"valid/{key}": loss.item() for _, (key, loss) in enumerate(validation_loss.items())},
     #           **{'valid/accuracies': validation_accuracy.item(), 'valid/task': iter}))
@@ -192,7 +196,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     if (iter == 0) or (np.array(val_losses)[(iter*500):(iter*500 + 500), 1].mean() >= np.array(val_losses)[((iter-1)*500):((iter-1)*500 + 500), 1].mean()):
         learner = learner.to('cpu')
         if iter == 0:
-            for filename in glob.glob("../logs/model*"):
+            for filename in glob.glob("../logs/{}/{}/model*".format(folder, args.experiment)):
                 os.remove(filename) 
 
         profiler.log_model(learner, opt, iter)

@@ -1,8 +1,8 @@
 {
 "dataset": "miniimagenet",
-"root": "../../dataset/mini_imagenet",
+"root": "../dataset/mini_imagenet",
 "model_path": "/home/nfs/anujsingh/meta_lrng/files/temp4/learning_to_meta-learn/logs/DELPO_miniimagenet_5-way_5-shot_10-queries/models-8-ptnf-tafe",
-"pretrained": ["True", "/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/mini/25u1gtp5.pth", "nofreeze"],
+"pretrained": ["True", "../dataset/backbones/mini/25u1gtp5.pth", "nofreeze"],
 "n_ways": 5,
 "k_shots": 5,
 "q_shots": 10,
