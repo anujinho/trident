@@ -743,7 +743,7 @@ class TADCEncoder(nn.Module):
                             G.shape[2], G.shape[3]).unsqueeze(dim=1)
             G = self.fe(G)
 
-            if (self.args.dataset == 'omniglot') or (self.args.dataset == 'tiered' and self.args.k_shots == 5):
+            if (self.args.dataset == 'omniglot') or (self.args.dataset == 'tiered' and self.args.k_shots == 5) or (self.args.dataset == 'miniimagenet' and self.args.k_shots == 5):
                 xq = self.f_q(G)
                 xq = nn.ReLU()(xq)
                 xk = self.f_k(G)

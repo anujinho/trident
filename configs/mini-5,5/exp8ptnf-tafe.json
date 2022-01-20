@@ -21,7 +21,7 @@
 "task_adapt_fn": "tafe",
 "alpha": 0.1,
 "experiment": "exp8ptnf-tafe",
-"order": "False",
+"order": "True",
 "device": "cuda",
 "resume": "No",
 "iter_resume": 0

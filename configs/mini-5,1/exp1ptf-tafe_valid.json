@@ -1,10 +1,11 @@
 {
 "dataset": "miniimagenet",
-"root": "../dataset/mini_imagenet",
-"model_path": "/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/DELPO_miniimagenet_5-way_1-shot_10-queries/models-1-tafe",
+"root": "../../dataset/mini_imagenet",
+"model_path": "/home/nfs/anujsingh/meta_lrng/files/temp4/learning_to_meta-learn/logs/DELPO_miniimagenet_5-way_1-shot_10-queries/models-1ptf-tafe",
 "n_ways": 5,
 "k_shots": 1,
 "q_shots": 10,
+"pretrained": ["True", "/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/mini/25u1gtp5.pth", "freeze"],
 "inner_adapt_steps_val": 5,
 "batch_size": 500,
 "inner_lr": 0.001,
@@ -17,7 +18,7 @@
 "task_adapt": "True",
 "task_adapt_fn": "tafe",
 "alpha": 0.1,
-"experiment": "exp1-tafe",
+"experiment": "exp1ptf-tafe",
 "order": "False",
 "device": "cuda"
 }
