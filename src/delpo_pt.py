@@ -158,7 +158,8 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     # qimages = wandb.Image(query_imgs, caption="Query Images")
     # wandb.log({"reconst_examples": rimages, "gt_examples": qimages})
 
-    for batch, vtask in enumerate(valid_tasks):
+    for batch in range(500):
+        vtask = valid_tasks.sample()
         model = learner.clone()
         # if (iter % 500 == 0) and (batch == 0):
         #     validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
