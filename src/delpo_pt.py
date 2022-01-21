@@ -194,7 +194,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     profiler.log_csv(val_losses, 'valid')
 
     # Checkpointing the learner
-    if (iter == 0) or (np.array(val_losses)[(iter*500):(iter*500 + 500), 1].mean() >= val_acc_prev):
+    if (iter == 0) or (np.array(val_losses)[:, 1].mean() >= val_acc_prev):
         learner = learner.to('cpu')
         if iter == 0:
             for filename in glob.glob("../logs/{}/{}/model*".format(folder, args.experiment)):
@@ -204,7 +204,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         learner = learner.to(args.device)
     else:
         continue
-    val_acc_prev = np.array(val_losses)[(iter*500):(iter*500 + 500), 1].mean()
+    val_acc_prev = np.array(val_losses)[:, 1].mean()
 
 profiler.log_model(learner, opt, 'last')
 profiler.log_model(learner, opt, iter)
