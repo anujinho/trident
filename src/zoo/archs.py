@@ -461,7 +461,7 @@ class CEncoder(nn.Module):
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if self.pretrain_flag == True:
                 self.net = ResNet12Backbone(
-                args, avg_pool=True)  # F => 16000; T => 640
+                    args, avg_pool=True)  # F => 16000; T => 640
                 weights = torch.load(args.pretrained[1], map_location='cpu')
                 self.net.load_state_dict(weights)
                 self.net.to(args.device)
@@ -469,11 +469,11 @@ class CEncoder(nn.Module):
                     # Freeze the backbone
                     for p in self.net.parameters():
                         p.requires_grad = False
-                        
+
             else:
                 self.net = nn.Sequential(
                     nn.Conv2d(num_input_channels, c_hid,
-                            kernel_size=3, padding=1),
+                              kernel_size=3, padding=1),
                     nn.BatchNorm2d(c_hid),
                     act_fn(),
                     nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -525,7 +525,7 @@ class TAFE(nn.Module):
         #     nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
         #     act_fn()
         # )
-        
+
         # # Query, Key and Value extractors as 1x1 Convs
         # self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
         # self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
@@ -539,19 +539,20 @@ class TAFE(nn.Module):
             nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
                 1, 1), stride=(1, 1), padding='valid', bias=False),
             act_fn())
-        
-        # Query, Key and Value extractors as 1x1 Convs
-        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
 
-    
-    
-    def forward(self, x, update:str):
-        
+        # Query, Key and Value extractors as 1x1 Convs
+        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+            1, 1), stride=(1, 1), padding='valid', bias=False)
+        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+            1, 1), stride=(1, 1), padding='valid', bias=False)
+        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+            1, 1), stride=(1, 1), padding='valid', bias=False)
+
+    def forward(self, x, update: str):
+
         G = x.permute(2, 3, 0, 1)
         G = G.reshape(G.shape[0] * G.shape[1],
-                        G.shape[2], G.shape[3]).unsqueeze(dim=1)
+                      G.shape[2], G.shape[3]).unsqueeze(dim=1)
         G = self.fe(G)
         xq = self.f_q(G)
         xk = self.f_k(G)
@@ -560,7 +561,7 @@ class TAFE(nn.Module):
         xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
         xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
 
-        # # Inter-Image convolutional comparisons for feature extraction 
+        # # Inter-Image convolutional comparisons for feature extraction
         # g = x.permute(1,0,2,3)
         # g = self.fe(g)
 
@@ -577,19 +578,19 @@ class TAFE(nn.Module):
         xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
         xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
 
-        g = torch.mm(xq, xk.transpose(0,1))
+        g = torch.mm(xq, xk.transpose(0, 1))
         softmax = nn.Softmax(dim=-1)
         g = softmax(g)
         g = torch.mm(g, xv)
         #del xq, xk, xv
-        
+
         # Transductive Mask transformed input
         g = g.reshape(-1, x.shape[2], x.shape[3])
         if update == 'inner':
             x = x[:self.args.n_ways*self.args.k_shots] * g
         elif update == 'outer':
             x = x[self.args.n_ways*self.args.k_shots:] * g
-        
+
         x = nn.Flatten()(x)
 
         return x
@@ -646,7 +647,7 @@ class TADCEncoder(nn.Module):
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if args.pretrained[0] == True:
                 self.net = ResNet12Backbone(
-                args, avg_pool=True)  # F => 16000; T => 640
+                    args, avg_pool=True)  # F => 16000; T => 640
                 weights = torch.load(args.pretrained[1], map_location='cpu')
                 self.net.load_state_dict(weights)
                 self.net.to(args.device)
@@ -654,11 +655,11 @@ class TADCEncoder(nn.Module):
                     # Freeze the backbone
                     for p in self.net.parameters():
                         p.requires_grad = False
-                        
+
             else:
                 self.net = nn.Sequential(
                     nn.Conv2d(num_input_channels, c_hid,
-                            kernel_size=3, padding=1),
+                              kernel_size=3, padding=1),
                     nn.BatchNorm2d(c_hid),
                     act_fn(),
                     nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -704,19 +705,21 @@ class TADCEncoder(nn.Module):
         #self.tafe = TAFE(self.args)
         elif self.task_adapt_fn == 'tafe':
             self.fe = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
-                self.n, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn(),
+                nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+                    self.n, 1), stride=(1, 1), padding='valid', bias=False),
+                act_fn(),
 
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
-                1, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn())
-        
+                nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+                    1, 1), stride=(1, 1), padding='valid', bias=False),
+                act_fn())
+
             # Query, Key and Value extractors as 1x1 Convs
-            self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
-            self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
-            self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1, 1), stride=(1, 1), padding='valid', bias=False)
-
+            self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False)
+            self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False)
+            self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False)
 
     def forward(self, x, update: str):
         x = self.net(x)
@@ -737,10 +740,10 @@ class TADCEncoder(nn.Module):
 
         elif self.task_adapt_fn == 'tafe':
             #x = self.tafe(x, update)
-            
+
             G = x.permute(2, 3, 0, 1)
             G = G.reshape(G.shape[0] * G.shape[1],
-                            G.shape[2], G.shape[3]).unsqueeze(dim=1)
+                          G.shape[2], G.shape[3]).unsqueeze(dim=1)
             G = self.fe(G)
 
             if (self.args.dataset == 'omniglot') or (self.args.dataset == 'tiered' and self.args.k_shots == 5) or (self.args.dataset == 'miniimagenet' and self.args.k_shots == 5):
@@ -755,28 +758,31 @@ class TADCEncoder(nn.Module):
                 xk = self.f_k(G)
                 xv = self.f_v(G)
 
-            xq = xq.squeeze(dim=1).squeeze(dim=1).transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
-            xk = xk.squeeze(dim=1).squeeze(dim=1).transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
-            xv = xv.squeeze(dim=1).squeeze(dim=1).transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xq = xq.squeeze(dim=1).squeeze(dim=1).transpose(
+                0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xk = xk.squeeze(dim=1).squeeze(dim=1).transpose(
+                0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xv = xv.squeeze(dim=1).squeeze(dim=1).transpose(
+                0, 1).reshape(-1, x.shape[2], x.shape[3])
 
             # Attention Block
             xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
             xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
             xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
 
-            G = torch.mm(xq, xk.transpose(0,1)/xk.shape[1]**0.5)
+            G = torch.mm(xq, xk.transpose(0, 1)/xk.shape[1]**0.5)
             softmax = nn.Softmax(dim=-1)
             G = softmax(G)
             G = torch.mm(G, xv)
             #del xq, xk, xv
-            
+
             # Transductive Mask transformed input
             G = G.reshape(-1, x.shape[2], x.shape[3])
             if update == 'inner':
                 x = x[:self.args.n_ways*self.args.k_shots] * G
             elif update == 'outer':
                 x = x[self.args.n_ways*self.args.k_shots:] * G
-            
+
             x = nn.Flatten()(x)
 
         elif self.task_adapt_fn == 'gks':
@@ -1015,7 +1021,6 @@ class CCVAE(nn.Module):
             dataset == 'tiered') else 4
         fsize = fcoeff*self.base_channels
 
-
         self.encoder = CEncoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, dataset=self.dataset, args=args, pretrain_flag=False)
 
@@ -1037,7 +1042,7 @@ class CCVAE(nn.Module):
             return mu
 
     def forward(self, x, update):
-        
+
         if self.task_adapt & (update == 'inner'):
             xs = x[:self.args.n_ways*self.args.k_shots]
         elif self.task_adapt & (update == 'outer'):
@@ -1050,7 +1055,7 @@ class CCVAE(nn.Module):
         del xs
 
         logits, mu_l, log_var_l, z_l = self.classifier_vae(x, z_s, update)
-        
+
         x = self.decoder(torch.cat([z_s, z_l], dim=1))
 
         return x, logits, mu_l, log_var_l, mu_s, log_var_s
