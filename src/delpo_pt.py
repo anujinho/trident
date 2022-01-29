@@ -108,13 +108,13 @@ else:
 
 if args.order == False:
     profiler = Profiler('DELPO_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
-                        args.n_ways, args.k_shots, args.q_shots), args.experiment)
+                        args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
     folder = 'DELPO_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
                         args.n_ways, args.k_shots, args.q_shots)
 
 elif args.order == True:
     profiler = Profiler('FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
-        args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment)
+        args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
     folder = 'FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
         args.dataset, args.n_ways, args.k_shots, args.q_shots)
 
@@ -129,18 +129,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()
         model = learner.clone()
-        # if (iter % 500 == 0) & (batch == 0):
-        #     evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
-        #         ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
-
-        #     # Logging train-task images and latents
-        #     di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-        #     dl = {"label_latents": [mu_l, log_var_l],
-        #           "style_latents": [mu_s, log_var_s]}
-        #     profiler.log_data(di, iter, 'images', 'train')
-        #     profiler.log_data(dl, iter, 'latents', 'train')
-
-        # else:
+        
         evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
             ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
 
@@ -151,27 +140,10 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         tmp = tmp + [a.item() for a in evaluation_loss.values()]
         batch_losses.append(tmp)
 
-    #     wandb.log(dict({f"train/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
-    #               **{'train/accuracies': evaluation_accuracy.item(), 'train/task': (iter*args.meta_batch_size)+batch}))
-
-    # rimages = wandb.Image(reconst_img, caption="Reconstructed Query Images")
-    # qimages = wandb.Image(query_imgs, caption="Query Images")
-    # wandb.log({"reconst_examples": rimages, "gt_examples": qimages})
-
     for batch in range(500):
         vtask = valid_tasks.sample()
         model = learner.clone()
-        # if (iter % 500 == 0) and (batch == 0):
-        #     validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
-        #         vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
-        #     # Logging valid-task images and latents
-        #     di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-        #     dl = {"label_latents": [mu_l, log_var_l],
-        #         "style_latents": [mu_s, log_var_s]}
-        #     profiler.log_data(di, iter, 'images', 'valid')
-        #     profiler.log_data(dl, iter, 'latents', 'valid')
 
-        # else:
         validation_loss, validation_accuracy = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
 
@@ -180,8 +152,6 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         tmp = tmp + [a.item() for a in validation_loss.values()]
         val_losses.append(tmp)
 
-    # wandb.log(dict({f"valid/{key}": loss.item() for _, (key, loss) in enumerate(validation_loss.items())},
-    #           **{'valid/accuracies': validation_accuracy.item(), 'valid/task': iter}))
 
     # Meta backpropagation of gradients
     for p in learner.parameters():
@@ -196,9 +166,8 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     # Checkpointing the learner
     if (iter == 0) or (np.array(val_losses)[:, 1].mean() >= val_acc_prev):
         learner = learner.to('cpu')
-        if iter == 0:
-            for filename in glob.glob("../logs/{}/{}/model*".format(folder, args.experiment)):
-                os.remove(filename) 
+        for filename in glob.glob("../logs/{}/{}/model*".format(folder, args.experiment)):
+            os.remove(filename) 
 
         profiler.log_model(learner, opt, iter)
         learner = learner.to(args.device)

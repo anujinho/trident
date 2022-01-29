@@ -503,97 +503,97 @@ class CEncoder(nn.Module):
         return x
 
 
-class TAFE(nn.Module):
-    """ Transductive Attention based Feature Extractor that uses 1x1 Convs as Query, Key and Value extractors
-    from per Channel Image feature maps and then uses Attention to finally create per channel transductive-masks. """
+# class TAFE(nn.Module):
+#     """ Transductive Attention based Feature Extractor that uses 1x1 Convs as Query, Key and Value extractors
+#     from per Channel Image feature maps and then uses Attention to finally create per channel transductive-masks. """
 
-    def __init__(self,
-                 args,
-                 act_fn: object = nn.ReLU):
-        """
-        Inputs:
-            - args: dict of arguments
-            - act_fn : Activation function used throughout the encoder network
-        """
+#     def __init__(self,
+#                  args,
+#                  act_fn: object = nn.ReLU):
+#         """
+#         Inputs:
+#             - args: dict of arguments
+#             - act_fn : Activation function used throughout the encoder network
+#         """
 
-        super(TAFE, self).__init__()
-        self.args = args
-        self.n = args.n_ways * (args.k_shots + args.q_shots)
-        # self.fe = nn.Sequential(
-        #     nn.Conv2d(in_channels=self.n, out_channels=64, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
-        #     act_fn(),
-        #     nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
-        #     act_fn()
-        # )
+#         super(TAFE, self).__init__()
+#         self.args = args
+#         self.n = args.n_ways * (args.k_shots + args.q_shots)
+#         # self.fe = nn.Sequential(
+#         #     nn.Conv2d(in_channels=self.n, out_channels=64, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
+#         #     act_fn(),
+#         #     nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
+#         #     act_fn()
+#         # )
 
-        # # Query, Key and Value extractors as 1x1 Convs
-        # self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
-        # self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
-        # self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+#         # # Query, Key and Value extractors as 1x1 Convs
+#         # self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+#         # self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+#         # self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
 
-        self.fe = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
-                self.n, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn(),
+#         self.fe = nn.Sequential(
+#             nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+#                 self.n, 1), stride=(1, 1), padding='valid', bias=False),
+#             act_fn(),
 
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
-                1, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn())
+#             nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+#                 1, 1), stride=(1, 1), padding='valid', bias=False),
+#             act_fn())
 
-        # Query, Key and Value extractors as 1x1 Convs
-        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-            1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-            1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-            1, 1), stride=(1, 1), padding='valid', bias=False)
+#         # Query, Key and Value extractors as 1x1 Convs
+#         self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+#             1, 1), stride=(1, 1), padding='valid', bias=False)
+#         self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+#             1, 1), stride=(1, 1), padding='valid', bias=False)
+#         self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+#             1, 1), stride=(1, 1), padding='valid', bias=False)
 
-    def forward(self, x, update: str):
+#     def forward(self, x, update: str):
 
-        G = x.permute(2, 3, 0, 1)
-        G = G.reshape(G.shape[0] * G.shape[1],
-                      G.shape[2], G.shape[3]).unsqueeze(dim=1)
-        G = self.fe(G)
-        xq = self.f_q(G)
-        xk = self.f_k(G)
-        xv = self.f_v(G)
-        xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
-        xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
-        xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+#         G = x.permute(2, 3, 0, 1)
+#         G = G.reshape(G.shape[0] * G.shape[1],
+#                       G.shape[2], G.shape[3]).unsqueeze(dim=1)
+#         G = self.fe(G)
+#         xq = self.f_q(G)
+#         xk = self.f_k(G)
+#         xv = self.f_v(G)
+#         xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+#         xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+#         xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
 
-        # # Inter-Image convolutional comparisons for feature extraction
-        # g = x.permute(1,0,2,3)
-        # g = self.fe(g)
+#         # # Inter-Image convolutional comparisons for feature extraction
+#         # g = x.permute(1,0,2,3)
+#         # g = self.fe(g)
 
-        # # Preparing Q, K, V
-        # xq = self.f_q(g)
-        # xk = self.f_k(g)
-        # xv = self.f_v(g)
-        # xq = xq.squeeze()
-        # xk = xk.squeeze()
-        # xv = xv.squeeze()
+#         # # Preparing Q, K, V
+#         # xq = self.f_q(g)
+#         # xk = self.f_k(g)
+#         # xv = self.f_v(g)
+#         # xq = xq.squeeze()
+#         # xk = xk.squeeze()
+#         # xv = xv.squeeze()
 
-        # Attention Block
-        xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
-        xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
-        xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
+#         # Attention Block
+#         xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
+#         xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
+#         xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
 
-        g = torch.mm(xq, xk.transpose(0, 1))
-        softmax = nn.Softmax(dim=-1)
-        g = softmax(g)
-        g = torch.mm(g, xv)
-        #del xq, xk, xv
+#         g = torch.mm(xq, xk.transpose(0, 1))
+#         softmax = nn.Softmax(dim=-1)
+#         g = softmax(g)
+#         g = torch.mm(g, xv)
+#         #del xq, xk, xv
 
-        # Transductive Mask transformed input
-        g = g.reshape(-1, x.shape[2], x.shape[3])
-        if update == 'inner':
-            x = x[:self.args.n_ways*self.args.k_shots] * g
-        elif update == 'outer':
-            x = x[self.args.n_ways*self.args.k_shots:] * g
+#         # Transductive Mask transformed input
+#         g = g.reshape(-1, x.shape[2], x.shape[3])
+#         if update == 'inner':
+#             x = x[:self.args.n_ways*self.args.k_shots] * g
+#         elif update == 'outer':
+#             x = x[self.args.n_ways*self.args.k_shots:] * g
 
-        x = nn.Flatten()(x)
+#         x = nn.Flatten()(x)
 
-        return x
+#         return x
 
 
 class TADCEncoder(nn.Module):

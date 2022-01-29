@@ -107,11 +107,11 @@ else:
 
 if args.order == False:
     profiler = Profiler('DELPO_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
-                        args.n_ways, args.k_shots, args.q_shots), args.experiment)
+                        args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
 
 elif args.order == True:
     profiler = Profiler('FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
-        args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment)
+        args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
 
 
 ## Training ##
