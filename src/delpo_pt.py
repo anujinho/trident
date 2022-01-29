@@ -166,7 +166,9 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     # Checkpointing the learner
     if (iter == 0) or (np.array(val_losses)[:, 1].mean() >= val_acc_prev):
         learner = learner.to('cpu')
-        for filename in glob.glob("../logs/{}/{}/model*".format(folder, args.experiment)):
+        for filename in glob.glob("/users/anujsingh/files/learning_to_meta-learn/logs/{}/{}/model*".format(folder, args.experiment)):
+            os.remove(filename)
+        for filename in glob.glob("/users/anujsingh/files/learning_to_meta-learn/logs/{}/{}/opt*".format(folder, args.experiment)):
             os.remove(filename) 
 
         profiler.log_model(learner, opt, iter)
