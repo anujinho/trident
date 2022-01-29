@@ -500,6 +500,8 @@ class CEncoder(nn.Module):
 
     def forward(self, x):
         x = self.net(x)
+        if self.args.pretrained[0]:
+            x = nn.Flatten()(x)
         return x
 
 
