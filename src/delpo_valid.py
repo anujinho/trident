@@ -24,7 +24,7 @@ parser.add_argument('--cnfg', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
 parser.add_argument('--model-path', type=str)
-parser.add_argument('--pretrained', type=list)
+parser.add_argument('--backbone', type=list)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
@@ -76,10 +76,10 @@ if args.task_adapt == 'True':
 elif args.task_adapt == 'False':
     args.task_adapt = False
 
-if args.pretrained[0] == 'True':
-    args.pretrained[0] = True
-elif args.pretrained[0] == 'False':
-    args.pretrained[0] = False
+if args.backbone[0] == 'True':
+    args.backbone[0] = True
+elif args.backbone[0] == 'False':
+    args.backbone[0] = False
 
 
 # wandb.config.update(args)

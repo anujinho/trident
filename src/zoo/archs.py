@@ -419,7 +419,7 @@ class CEncoder(nn.Module):
                  base_channel_size: int,
                  dataset: str,
                  args,
-                 pretrain_flag: bool,
+                 backbone_flag: bool,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -431,7 +431,7 @@ class CEncoder(nn.Module):
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
-        self.pretrain_flag = pretrain_flag
+        self.backbone_flag = backbone_flag
 
         if dataset == 'omniglot':
             self.net = nn.Sequential(
@@ -459,16 +459,17 @@ class CEncoder(nn.Module):
             )
 
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            if self.pretrain_flag == True:
+            if self.backbone_flag == True:
                 self.net = ResNet12Backbone(
                     args, avg_pool=True)  # F => 16000; T => 640
-                weights = torch.load(args.pretrained[1], map_location='cpu')
-                self.net.load_state_dict(weights)
+                if args.backbone[2] == 'pretrained':
+                    # Load the weights
+                    weights = torch.load(args.backbone[1], map_location='cpu')
+                    self.net.load_state_dict(weights)
                 self.net.to(args.device)
-                if args.pretrained[2] == 'freeze':
-                    # Freeze the backbone
-                    for p in self.net.parameters():
-                        p.requires_grad = False
+                # Make trainable
+                for p in self.net.parameters():
+                    p.requires_grad = True
 
             else:
                 self.net = nn.Sequential(
@@ -500,7 +501,7 @@ class CEncoder(nn.Module):
 
     def forward(self, x):
         x = self.net(x)
-        if self.args.pretrained[0]:
+        if self.args.backbone[0]:
             x = nn.Flatten()(x)
         return x
 
@@ -647,16 +648,17 @@ class TADCEncoder(nn.Module):
             )
 
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
-            if args.pretrained[0] == True:
+            if args.backbone[0] == True:
                 self.net = ResNet12Backbone(
                     args, avg_pool=True)  # F => 16000; T => 640
-                weights = torch.load(args.pretrained[1], map_location='cpu')
-                self.net.load_state_dict(weights)
+                if args.backbone[2] == 'pretrained':
+                    # Load the weights
+                    weights = torch.load(args.backbone[1], map_location='cpu')
+                    self.net.load_state_dict(weights)
                 self.net.to(args.device)
-                if args.pretrained[2] == 'freeze':
-                    # Freeze the backbone
-                    for p in self.net.parameters():
-                        p.requires_grad = False
+                # Make trainable
+                for p in self.net.parameters():
+                    p.requires_grad = True
 
             else:
                 self.net = nn.Sequential(
@@ -961,7 +963,7 @@ class Classifier_VAE(nn.Module):
         self.task_adapt = task_adapt
         self.task_adapt_fn = task_adapt_fn
 
-        if args.pretrained[0] == True:
+        if args.backbone[0] == True:
             fsize = 640
         else:
             fcoeff = 25 if (dataset == 'miniimagenet') or (
@@ -973,7 +975,7 @@ class Classifier_VAE(nn.Module):
                                        base_channel_size=self.base_channels, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                    base_channel_size=self.base_channels, dataset=dataset, args=args, pretrain_flag=args.pretrained[0])
+                                    base_channel_size=self.base_channels, dataset=dataset, args=args, backbone_flag=args.backbone[0])
 
         self.gaussian_parametrizer = GaussianParametrizer(
             latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
@@ -1024,7 +1026,7 @@ class CCVAE(nn.Module):
         fsize = fcoeff*self.base_channels
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, dataset=self.dataset, args=args, pretrain_flag=False)
+                                base_channel_size=self.base_channels, dataset=self.dataset, args=args, backbone_flag=False)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
                                 base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)

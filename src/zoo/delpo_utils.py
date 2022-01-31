@@ -60,7 +60,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
                         n_ways=n_ways, dataset='cifarfs', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
     learner = learner.to(device)
-    learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr, allow_nograd=True if args.pretrained[2]=='freeze' else False)
+    learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr, allow_nograd=False) # allow_nograd=True if args.pretrained[2]=='freeze' else False
 
 
     return train_tasks, valid_tasks, test_tasks, learner
