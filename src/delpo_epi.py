@@ -112,7 +112,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()        
         evaluation_loss, evaluation_accuracy = inner_adapt_delpo(
-            ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.device, False, args)
+            ttask, reconst_loss, learner, args.n_ways, args.k_shots, args.q_shots, args.device, False, args)
         
         # Logging per train-task losses and accuracies
         tmp = [(iter*args.meta_batch_size)+batch, evaluation_accuracy.item()]
@@ -128,7 +128,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         model = learner.clone()
 
         validation_loss, validation_accuracy = inner_adapt_delpo(
-            vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
+            vtask, reconst_loss, learner, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
 
         # Logging per validation-task losses and accuracies
         tmp = [(iter*500)+batch, validation_accuracy.item()]
