@@ -10,8 +10,7 @@ from torchvision import transforms
 
 from src.zoo.archs import CCVAE
 
-
-def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, repar):
+def setup(dataset, root, n_ways, k_shots, q_shots, device, download, task_adapt, task_adapt_fn, args):
     if dataset == 'omniglot':
         image_trans = transforms.Compose([transforms.Resize(
             28, interpolation=LANCZOS), transforms.ToTensor(), lambda x: 1-x])
@@ -25,9 +24,9 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans,
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, classes=classes[1200:], num_tasks=600)
         learner = CCVAE(in_channels=1, base_channels=64,
-                        n_ways=n_ways, dataset='omniglot', repar=repar)
+                        n_ways=n_ways, dataset='omniglot', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
-    elif dataset == 'miniimagenet':
+    elif (dataset == 'miniimagenet'):
         # Generating tasks and model according to the MAML implementation for MiniImageNet
         train_tasks = gen_tasks(dataset, root, download=download, mode='train',
                                 n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
@@ -36,10 +35,31 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = CCVAE(in_channels=3, base_channels=32,
-                        n_ways=n_ways, dataset='mini_imagenet', repar=repar)
+                        n_ways=n_ways, dataset='miniimagenet', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
+
+    elif (dataset == 'tiered'):
+        image_trans = transforms.Compose([transforms.ToTensor()])
+        train_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='train',
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)  # , num_tasks=50000)
+        valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='validation',
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)  # , num_tasks=10000)
+        test_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='test',
+                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=2000)
+        learner = CCVAE(in_channels=3, base_channels=32,
+                        n_ways=n_ways, dataset='tiered', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
+
+    elif dataset == 'cifarfs':
+        image_trans = transforms.Compose([transforms.ToTensor()])
+        train_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='train',
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
+        valid_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='validation',
+                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots)
+        test_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='test',
+                               n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
+        learner = CCVAE(in_channels=3, base_channels=64,
+                        n_ways=n_ways, dataset='cifarfs', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
     learner = learner.to(device)
-    learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr)
 
     return train_tasks, valid_tasks, test_tasks, learner
 
@@ -76,10 +96,12 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args):
+def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, device, log_data: bool, args):
     data, labels = task
-    if args.dataset == 'miniimagenet': data, labels = data.to(device) / 255.0, labels.to(device)
-    elif args.dataset == 'omniglot': data, labels = data.to(device), labels.to(device)
+    if args.dataset == 'miniimagenet':
+        data, labels = data.to(device) / 255.0, labels.to(device)
+    elif (args.dataset == 'omniglot') or (args.dataset == 'cifarfs') or (args.dataset == 'tiered'):
+        data, labels = data.to(device), labels.to(device)
     total = n_ways * (k_shots + q_shots)
     queries_index = np.zeros(total)
 
@@ -92,15 +114,14 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     queries = data[np.where(queries_index == 1)]
     queries_labels = labels[np.where(queries_index == 1)]
 
-    # Inner adapt step
-    for _ in range(adapt_steps):
+    # Adaptation Step
+    if args.task_adapt:
         reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
-            support)
-        adapt_loss = loss(reconst_loss, reconst_image, support,
-                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
-        learner.adapt(adapt_loss['elbo'])
+            torch.cat([support, queries], dim=0), 'outer')
+    else:
+        reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
+            queries, 'outer')
 
-    reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(queries)
     eval_loss = loss(reconst_loss, reconst_image, queries,
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
@@ -109,3 +130,8 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
         return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu')
     else:
         return eval_loss, eval_acc
+
+
+# HOW TO TREAT SUPPORT AND QUERY SAMPLES DIFFERENTLY IN CASE OF PARAMETRIC CLASSIFIER: SIMPLY BACKPROP LOSS ON QUERY SAMPLES, USE SUPPORT FOR FEAT MODULE.
+# FIX "inner", "outer" ARGUMENTS TO SUPPORT EPISODIC TRAINING TOO: SIMPLY USE "outer" ARG FOR QUERY LOSS BACKPROP
+# LOL
