@@ -126,7 +126,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     for batch in range(500):
         vtask = valid_tasks.sample()
         validation_loss, validation_accuracy = inner_adapt_delpo(
-            vtask, reconst_loss, learner, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
+            vtask, reconst_loss, learner, args.n_ways, args.k_shots, args.q_shots, args.device, False, args)
 
         # Logging per validation-task losses and accuracies
         tmp = [(iter*500)+batch, validation_accuracy.item()]
