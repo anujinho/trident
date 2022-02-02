@@ -6,7 +6,7 @@
 "n_ways": 5,
 "k_shots": 1,
 "q_shots": 10,
-"meta_lr": 0.00075,
+"meta_lr": 0.000075,
 "meta_batch_size": 20,
 "iterations": 100000,
 "wt_ce": 100,
