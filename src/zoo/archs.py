@@ -677,8 +677,10 @@ class TADCEncoder(nn.Module):
 
             if args.backbone[0] == True:
                 if args.backbone[2] == 'pretrained':
-                    self.net = l2l.vision.models.get_pretrained_backbone(
-                        model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
+                    self.net = WRN28Backbone()
+                    weights = torch.load(args.backbone[1], map_location='cpu')
+                    self.net.load_state_dict(weights)
+
                 elif args.backbone[2] == 'scratch':
                     self.net = ResNet12Backbone(
                         args, avg_pool=True)  # F => 16000; T => 640
@@ -775,7 +777,7 @@ class TADCEncoder(nn.Module):
 
         elif self.task_adapt_fn == 'tafe':
             #x = self.tafe(x, update)
-            x = x.reshape(x.shape[0], 640, 1, 1)
+            #x = x.reshape(x.shape[0], 640, 1, 1)
 
             G = x.permute(2, 3, 0, 1)
             G = G.reshape(G.shape[0] * G.shape[1],
