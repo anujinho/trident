@@ -461,25 +461,26 @@ class CEncoder(nn.Module):
 
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if self.backbone_flag == True:
-                if self.args.dataset == 'miniimagenet': dataset = 'mini-imagenet'
-                elif self.args.dataset == 'tiered': dataset = 'tiered-imagenet'
-                
+                if self.args.dataset == 'miniimagenet':
+                    dataset = 'mini-imagenet'
+                elif self.args.dataset == 'tiered':
+                    dataset = 'tiered-imagenet'
+
                 if args.backbone[2] == 'pretrained':
-                    self.net = l2l.vision.models.get_pretrained_backbone(model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
+                    self.net = l2l.vision.models.get_pretrained_backbone(
+                        model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
                 elif args.backbone[2] == 'scratch':
                     self.net = ResNet12Backbone(
-                    args, avg_pool=True)  # F => 16000; T => 640
+                        args, avg_pool=True)  # F => 16000; T => 640
                 # Make trainable
                 for p in self.net.parameters():
                     p.requires_grad = True
 
-                self.net.to(args.device)    
-                    # # Load the weights
-                    # weights = torch.load(args.backbone[1], map_location='cpu')
-                    # self.net.load_state_dict(weights)
-            
-                
-                
+                self.net.to(args.device)
+                # # Load the weights
+                # weights = torch.load(args.backbone[1], map_location='cpu')
+                # self.net.load_state_dict(weights)
+
                 # self.net = ResNet12Backbone(
                 #     args, avg_pool=True)  # F => 16000; T => 640
                 # if args.backbone[2] == 'pretrained':
@@ -668,25 +669,28 @@ class TADCEncoder(nn.Module):
             )
 
         elif (self.args.dataset == 'miniimagenet') or (self.args.dataset == 'cifarfs') or (self.args.dataset == 'tiered'):
-            
-            if self.args.dataset == 'miniimagenet': dataset = 'mini-imagenet'
-            elif self.args.dataset == 'tiered': dataset = 'tiered-imagenet'
+
+            if self.args.dataset == 'miniimagenet':
+                dataset = 'mini-imagenet'
+            elif self.args.dataset == 'tiered':
+                dataset = 'tiered-imagenet'
 
             if args.backbone[0] == True:
                 if args.backbone[2] == 'pretrained':
-                    self.net = l2l.vision.models.get_pretrained_backbone(model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
+                    self.net = l2l.vision.models.get_pretrained_backbone(
+                        model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
                 elif args.backbone[2] == 'scratch':
                     self.net = ResNet12Backbone(
-                    args, avg_pool=True)  # F => 16000; T => 640
+                        args, avg_pool=True)  # F => 16000; T => 640
                 # Make trainable
                 for p in self.net.parameters():
                     p.requires_grad = True
 
-                self.net.to(args.device)    
-                    # # Load the weights
-                    # weights = torch.load(args.backbone[1], map_location='cpu')
-                    # self.net.load_state_dict(weights)
-            
+                self.net.to(args.device)
+                # # Load the weights
+                # weights = torch.load(args.backbone[1], map_location='cpu')
+                # self.net.load_state_dict(weights)
+
             else:
                 self.net = nn.Sequential(
                     nn.Conv2d(num_input_channels, c_hid,
@@ -771,6 +775,7 @@ class TADCEncoder(nn.Module):
 
         elif self.task_adapt_fn == 'tafe':
             #x = self.tafe(x, update)
+            x = x.reshape(x.shape[0], 640, 1, 1)
 
             G = x.permute(2, 3, 0, 1)
             G = G.reshape(G.shape[0] * G.shape[1],
