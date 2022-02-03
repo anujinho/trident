@@ -4,6 +4,7 @@ from torch._C import device
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import dataset
+import learn2learn as l2l
 
 
 def truncated_normal_(tensor, mean=0.0, std=1.0):
@@ -460,16 +461,35 @@ class CEncoder(nn.Module):
 
         elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
             if self.backbone_flag == True:
-                self.net = ResNet12Backbone(
-                    args, avg_pool=True)  # F => 16000; T => 640
+                if self.args.dataset == 'miniimagenet': dataset = 'mini-imagenet'
+                elif self.args.dataset == 'tiered': dataset = 'tiered-imagenet'
+                
                 if args.backbone[2] == 'pretrained':
-                    # Load the weights
-                    weights = torch.load(args.backbone[1], map_location='cpu')
-                    self.net.load_state_dict(weights)
-                self.net.to(args.device)
+                    self.net = l2l.vision.models.get_pretrained_backbone(model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
+                elif args.backbone[2] == 'scratch':
+                    self.net = ResNet12Backbone(
+                    args, avg_pool=True)  # F => 16000; T => 640
                 # Make trainable
                 for p in self.net.parameters():
                     p.requires_grad = True
+
+                self.net.to(args.device)    
+                    # # Load the weights
+                    # weights = torch.load(args.backbone[1], map_location='cpu')
+                    # self.net.load_state_dict(weights)
+            
+                
+                
+                # self.net = ResNet12Backbone(
+                #     args, avg_pool=True)  # F => 16000; T => 640
+                # if args.backbone[2] == 'pretrained':
+                #     # Load the weights
+                #     weights = torch.load(args.backbone[1], map_location='cpu')
+                #     self.net.load_state_dict(weights)
+                # self.net.to(args.device)
+                # # Make trainable
+                # for p in self.net.parameters():
+                #     p.requires_grad = True
 
             else:
                 self.net = nn.Sequential(
@@ -624,7 +644,7 @@ class TADCEncoder(nn.Module):
         self.args = args
         self.task_adapt_fn = task_adapt_fn
 
-        if dataset == 'omniglot':
+        if self.args.dataset == 'omniglot':
             self.net = nn.Sequential(
                 nn.Conv2d(num_input_channels, c_hid,
                           kernel_size=3, padding=1, stride=(2, 2)),
@@ -647,19 +667,26 @@ class TADCEncoder(nn.Module):
                 act_fn()  # 2
             )
 
-        elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
+        elif (self.args.dataset == 'miniimagenet') or (self.args.dataset == 'cifarfs') or (self.args.dataset == 'tiered'):
+            
+            if self.args.dataset == 'miniimagenet': dataset = 'mini-imagenet'
+            elif self.args.dataset == 'tiered': dataset = 'tiered-imagenet'
+
             if args.backbone[0] == True:
-                self.net = ResNet12Backbone(
-                    args, avg_pool=True)  # F => 16000; T => 640
                 if args.backbone[2] == 'pretrained':
-                    # Load the weights
-                    weights = torch.load(args.backbone[1], map_location='cpu')
-                    self.net.load_state_dict(weights)
-                self.net.to(args.device)
+                    self.net = l2l.vision.models.get_pretrained_backbone(model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
+                elif args.backbone[2] == 'scratch':
+                    self.net = ResNet12Backbone(
+                    args, avg_pool=True)  # F => 16000; T => 640
                 # Make trainable
                 for p in self.net.parameters():
                     p.requires_grad = True
 
+                self.net.to(args.device)    
+                    # # Load the weights
+                    # weights = torch.load(args.backbone[1], map_location='cpu')
+                    # self.net.load_state_dict(weights)
+            
             else:
                 self.net = nn.Sequential(
                     nn.Conv2d(num_input_channels, c_hid,
