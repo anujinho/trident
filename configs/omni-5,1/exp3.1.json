@@ -5,6 +5,7 @@
 "n_ways": 5,
 "k_shots": 1,
 "q_shots": 15,
+"backbone": ["False", "", ""],
 "inner_adapt_steps_train": 5,
 "inner_adapt_steps_test": 5,
 "inner_lr": 0.02,
