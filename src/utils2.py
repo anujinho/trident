@@ -19,9 +19,11 @@ class Profiler():
         self.path_train = self.path + '/' + 'train.csv'
         self.path_valid = self.path + '/' + 'valid.csv'
         self.path_test = self.path + '/' + 'test.csv'
+        self.path_preds = self.path + '/' + 'preds.csv'
         df.to_csv(self.path_train, index=False)
         df.to_csv(self.path_valid, index=False)
         df.to_csv(self.path_test, index=False)
+        df.to_csv(self.path_preds, index=False)
 
 
     def log_csv(self, row, mode):
@@ -33,7 +35,7 @@ class Profiler():
             if self.args.backbone[0]:
                     csv_writer.writerows(row)
             else:
-                if mode == 'train':
+                if mode == 'train' or 'preds':
                     csv_writer.writerows(row)
                 else:
                     csv_writer.writerow(row)
