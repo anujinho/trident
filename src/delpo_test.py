@@ -88,11 +88,11 @@ _, _, test_tasks, _ = setup(
 reconst_loss = nn.MSELoss(reduction='none')
 if args.order == False:
     profiler = Profiler('DELPO_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset,
-                        args.n_ways, args.k_shots, args.q_shots), args.experiment)
+                        args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
 
 elif args.order == True:
     profiler = Profiler('FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
-        args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment)
+        args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
 
 
 ## Testing ##
