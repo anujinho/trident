@@ -119,8 +119,8 @@ for model_name in os.listdir(args.model_path):
         profiler.log_data(dl, iter, 'latents', 'train')
 
         # Logging test-task logits and ground-truth labels
-        tmp = np.array(torch.concat([logits, labels], dim=1))
-        profiler.log_csv(tmp, 'preds')
+        # tmp = np.array(torch.concat([logits, labels], dim=1))
+        # profiler.log_csv(tmp, 'preds')
         
         # Logging per test-task losses and accuracies
         tmp = [i, evaluation_accuracy.item()]

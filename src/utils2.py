@@ -32,8 +32,8 @@ class Profiler():
             # Create a writer object from csv module
             csv_writer = writer(write_obj)
             # Add contents of list as last row in the csv file
-            if self.args.backbone[0]:
-                    csv_writer.writerows(row)
+            if self.args.backbone[0] == True:
+                csv_writer.writerows(row)
             else:
                 if mode == 'train' or 'preds':
                     csv_writer.writerows(row)
