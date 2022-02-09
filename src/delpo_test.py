@@ -42,6 +42,8 @@ parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
 parser.add_argument('--download', type=str)
 parser.add_argument('--repar', type=str, default=True)
+parser.add_argument('--times', type=int)
+
 
 args = parser.parse_args()
 with open(args.cnfg) as f:
@@ -101,32 +103,32 @@ for model_name in os.listdir(args.model_path):
     learner = torch.load('{}/{}'.format(args.model_path, model_name))
     learner = learner.to(args.device)
     print('Testing on held out classes')
+    for t in range(args.times):
+        for i, tetask in enumerate(test_tasks):
+            # wandb.define_metric("accuracies", summary="max")
+            # wandb.define_metric("accuracies", summary="mean")
 
-    for i, tetask in enumerate(test_tasks):
-        # wandb.define_metric("accuracies", summary="max")
-        # wandb.define_metric("accuracies", summary="mean")
+            model = learner.clone()
+            #tetask = test_tasks.sample()
+            evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s, logits, labels = inner_adapt_delpo(
+                tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, True, args)
+            
+            # Logging test-task images and latents
+            di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+            dl = {"label_latents": [mu_l, log_var_l],
+                    "style_latents": [mu_s, log_var_s]}
+            profiler.log_data(di, iter, 'images', 'train')
+            profiler.log_data(dl, iter, 'latents', 'train')
 
-        model = learner.clone()
-        #tetask = test_tasks.sample()
-        evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s, logits, labels = inner_adapt_delpo(
-            tetask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device, True, args)
-        
-        # Logging test-task images and latents
-        di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-        dl = {"label_latents": [mu_l, log_var_l],
-                "style_latents": [mu_s, log_var_s]}
-        profiler.log_data(di, iter, 'images', 'train')
-        profiler.log_data(dl, iter, 'latents', 'train')
+            # Logging test-task logits and ground-truth labels
+            # tmp = np.array(torch.concat([logits, labels], dim=1))
+            # profiler.log_csv(tmp, 'preds')
+            
+            # Logging per test-task losses and accuracies
+            tmp = [i, evaluation_accuracy.item()]
+            tmp = tmp + [a.item() for a in evaluation_loss.values()]
+            tmp = tmp + [model_name]
+            profiler.log_csv(tmp, 'test_all') if args.times > 1 else profiler.log_csv(tmp, 'test')
 
-        # Logging test-task logits and ground-truth labels
-        # tmp = np.array(torch.concat([logits, labels], dim=1))
-        # profiler.log_csv(tmp, 'preds')
-        
-        # Logging per test-task losses and accuracies
-        tmp = [i, evaluation_accuracy.item()]
-        tmp = tmp + [a.item() for a in evaluation_loss.values()]
-        tmp = tmp + [model_name]
-        profiler.log_csv(tmp, 'test')
-
-        # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
-        #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
+            # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
+            #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
