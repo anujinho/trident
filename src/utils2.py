@@ -27,7 +27,7 @@ class Profiler():
 
 
     def log_csv(self, row, mode):
-        d = {'train': self.path_train, 'valid': self.path_valid, 'test': self.path_test}
+        d = {'train': self.path_train, 'valid': self.path_valid, 'test': self.path_test, 'test_all': self.path_test_all, 'preds': self.path_preds}
         with open(d[mode], 'a+', newline='') as write_obj:
             # Create a writer object from csv module
             csv_writer = writer(write_obj)
@@ -37,7 +37,6 @@ class Profiler():
             else:
                 if mode == 'train':
                     csv_writer.writerows(row)
-
                 else:
                     csv_writer.writerow(row)
 
