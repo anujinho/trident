@@ -35,7 +35,7 @@ class Profiler():
             if self.args.backbone[0] == True:
                 csv_writer.writerows(row)
             else:
-                if mode == 'train':
+                if ((mode == 'train') or (mode == 'preds')):
                     csv_writer.writerows(row)
                 else:
                     csv_writer.writerow(row)

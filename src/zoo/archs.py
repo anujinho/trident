@@ -526,6 +526,7 @@ class CEncoder(nn.Module):
             x = nn.Flatten()(x)
         return x
 
+# Figure out how to circumvent the self.args bullshit 
 
 # class TAFE(nn.Module):
 #     """ Transductive Attention based Feature Extractor that uses 1x1 Convs as Query, Key and Value extractors
@@ -669,11 +670,6 @@ class TADCEncoder(nn.Module):
             )
 
         elif (self.args.dataset == 'miniimagenet') or (self.args.dataset == 'cifarfs') or (self.args.dataset == 'tiered'):
-
-            if self.args.dataset == 'miniimagenet':
-                dataset = 'mini-imagenet'
-            elif self.args.dataset == 'tiered':
-                dataset = 'tiered-imagenet'
 
             if args.backbone[0] == True:
                 if args.backbone[2] == 'pretrained':

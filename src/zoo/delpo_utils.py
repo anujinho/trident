@@ -10,6 +10,7 @@ from torchvision import transforms
 
 from src.zoo.archs import CCVAE
 
+
 def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, task_adapt, task_adapt_fn, args):
     if dataset == 'omniglot':
         image_trans = transforms.Compose([transforms.Resize(
@@ -60,8 +61,9 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
                         n_ways=n_ways, dataset='cifarfs', task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=args)
 
     learner = learner.to(device)
-    learner = l2l.algorithms.MAML(learner, first_order=order, lr=inner_lr, allow_nograd=False) # allow_nograd=True if args.pretrained[2]=='freeze' else False
-
+    # allow_nograd=True if args.pretrained[2]=='freeze' else False
+    learner = l2l.algorithms.MAML(
+        learner, first_order=order, lr=inner_lr, allow_nograd=False)
 
     return train_tasks, valid_tasks, test_tasks, learner
 
@@ -116,6 +118,15 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     queries = data[np.where(queries_index == 1)]
     queries_labels = labels[np.where(queries_index == 1)]
 
+    # Logging latent spaces of queries before meta-adaptation
+    if args.extra == "Yes":
+        if args.task_adapt:
+            reconst_image, logits, mu_l_0, log_var_l_0, mu_s_0, log_var_s_0 = learner(
+                torch.cat([support, queries], dim=0), 'outer')
+        else:
+            reconst_image, logits, mu_l_0, log_var_l_0, mu_s_0, log_var_s_0 = learner(
+                queries, 'outer')
+    
     # Inner adapt step
     for _ in range(adapt_steps):
         if args.task_adapt:
@@ -125,7 +136,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
             reconst_image, logits, mu_l, log_var_l, mu_s, log_var_s = learner(
                 support, 'inner')
         adapt_loss = loss(reconst_loss, reconst_image, support,
-                            logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
+                          logits, support_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
         learner.adapt(adapt_loss['elbo'])
 
     if args.task_adapt:
@@ -139,7 +150,9 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
 
-    if log_data:
-        return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu'), logits, queries_labels
+    if log_data and (args.extra == 'Yes'):
+        return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu'), logits.detach().to('cpu'), queries_labels.detach().to('cpu'), mu_l_0.detach().to('cpu'), log_var_l_0.detach().to('cpu'), mu_s_0.detach().to('cpu'), log_var_s_0.detach().to('cpu')
+    elif log_data and (args.extra == 'No'):
+        return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu'), logits.detach().to('cpu'), queries_labels.detach().to('cpu')
     else:
         return eval_loss, eval_acc
