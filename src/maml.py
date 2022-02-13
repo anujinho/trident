@@ -44,18 +44,16 @@ with open(args.cnfg) as f:
 if args.order == 'True': args.order = True
 elif args.order == 'False': args.order = False
 
-if args.download == 'True': args.download = True
-elif args.download == 'False': args.download = False
 
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner = setup(
-    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download)
+    args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=False)
 opt = optim.Adam(learner.parameters(), args.meta_lr)
 loss = nn.CrossEntropyLoss(reduction='mean')
 if args.order == False:
-    profiler = Profiler('MAML_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
-    prof_test = Profiler('MAML_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
+    profiler = Profiler('MAML_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
+    prof_test = Profiler('MAML_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
 elif args.order == True:
     profiler = Profiler('FO-MAML_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
     prof_test = Profiler('FO-MAML_test_{}_{}-way_{}-shot_{}-queries'.format(args.dataset, args.n_ways, args.k_shots, args.q_shots))
