@@ -4,6 +4,7 @@ import numpy as np
 import os
 import tqdm
 import torch
+import json
 from torch import nn, optim
 
 from src.zoo.maml_utils import inner_adapt_maml, setup
@@ -31,6 +32,14 @@ parser.add_argument('--device', type=str)
 parser.add_argument('--experiment', type=str)
 
 args = parser.parse_args()
+with open(args.cnfg) as f:
+    parser = argparse.ArgumentParser()
+    argparse_dict = vars(args)
+    argparse_dict.update(json.load(f))
+
+    args = argparse.Namespace()
+    args.__dict__.update(argparse_dict)
+
 if args.order == 'True': args.order = True
 elif args.order == 'False': args.order = False
 
