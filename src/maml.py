@@ -22,6 +22,7 @@ parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
 parser.add_argument('--model-path', type=str)
+parser.add_argument('--backbone', type=list)
 parser.add_argument('--inner-adapt-steps-train', type=int)
 parser.add_argument('--inner-adapt-steps-test', type=int)
 parser.add_argument('--inner-lr', type=float)
@@ -44,7 +45,10 @@ with open(args.cnfg) as f:
 if args.order == 'True': args.order = True
 elif args.order == 'False': args.order = False
 
-
+if args.backbone[0] == 'True':
+    args.backbone[0] = True
+elif args.backbone[0] == 'False':
+    args.backbone[0] = False
 
 # Generating Tasks, initializing learners, loss, meta - optimizer
 train_tasks, valid_tasks, test_tasks, learner = setup(
