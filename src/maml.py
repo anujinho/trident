@@ -1,14 +1,13 @@
 import argparse
 
-import learn2learn as l2l
 import numpy as np
-import torch
+import os
 import tqdm
-from learn2learn.algorithms import maml
+import torch
 from torch import nn, optim
 
 from src.zoo.maml_utils import inner_adapt_maml, setup
-from src.utils import Profiler
+from src.utils2 import Profiler
 #from src.config import maml_omniglot, maml_mini
 
 ##############
@@ -20,6 +19,7 @@ parser.add_argument('--root', type=str)
 parser.add_argument('--n-ways', type=int)
 parser.add_argument('--k-shots', type=int)
 parser.add_argument('--q-shots', type=int)
+parser.add_argument('--model-path', type=str)
 parser.add_argument('--inner-adapt-steps-train', type=int)
 parser.add_argument('--inner-adapt-steps-test', type=int)
 parser.add_argument('--inner-lr', type=float)
@@ -28,7 +28,7 @@ parser.add_argument('--meta-batch-size', type=int)
 parser.add_argument('--iterations', type=int)
 parser.add_argument('--order', type=str)
 parser.add_argument('--device', type=str)
-parser.add_argument('--download', type=str)
+parser.add_argument('--experiment', type=str)
 
 args = parser.parse_args()
 if args.order == 'True': args.order = True
@@ -58,52 +58,57 @@ for iter in tqdm.tqdm(range(args.iterations)):
     meta_valid_loss = []
     meta_train_acc = []
     meta_valid_acc = []
+    batch_losses = []
+
 
     for batch in range(args.meta_batch_size):
         ttask = train_tasks.sample()
         model = learner.clone()
-        evaluation_loss, evaluation_accuracy = inner_adapt_maml(
+        evaluation_loss, evaluation_accuracy, _, _ = inner_adapt_maml(
             ttask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device)
         evaluation_loss.backward()
-        meta_train_loss.append(evaluation_loss.item())
-        meta_train_acc.append(evaluation_accuracy.item())
+        tmp = [(iter*args.meta_batch_size)+batch, evaluation_accuracy.item()]
+        batch_losses.append(tmp)
 
     vtask = valid_tasks.sample()
     model = learner.clone()
-    validation_loss, validation_accuracy = inner_adapt_maml(
+    validation_loss, validation_accuracy, _, _ = inner_adapt_maml(
         vtask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device)
-    meta_valid_loss.append(validation_loss.item())
-    meta_valid_acc.append(validation_accuracy.item())
-
-    profiler.log([np.array(meta_train_acc).mean(), np.array(meta_train_acc).std(), np.array(meta_train_loss).mean(), np.array(meta_train_loss).std(), np.array(
-            meta_valid_acc).mean(), np.array(
-            meta_valid_acc).std(), np.array(
-            meta_valid_loss).mean(), np.array(
-            meta_valid_loss).std()])
-
-    if (iter%500 == 0):
-        print('Meta Train Accuracy: {:.4f} +- {:.4f}'.format(np.array(meta_train_acc).mean(), np.array(meta_train_acc).std()))
-        print('Meta Valid Accuracy: {:.4f} +- {:.4f}'.format(np.array(meta_valid_acc).mean(), np.array(meta_valid_acc).std()))
-
+    
+    
     for p in learner.parameters():
         p.grad.data.mul_(1.0 / args.meta_batch_size)
     opt.step()
 
-#torch.save(learner, f='../repro')
+    profiler.log_csv(batch_losses, 'train')
+    # Checkpointing the learner
+    if iter % 500 == 0:
+        learner = learner.to('cpu')
+        profiler.log_model(learner, opt, iter)
+        learner = learner.to(args.device)
+    else:
+        continue
+
 
 ## Testing ##
-print('Testing on held out classes')
 
-for i, tetask in enumerate(test_tasks):
-    meta_test_acc = []
-    meta_test_loss = []
-    model = learner.clone()
-    #tetask = test_tasks.sample()
-    evaluation_loss, evaluation_accuracy = inner_adapt_maml(
-        tetask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device)
-    meta_test_loss.append(evaluation_loss.item())
-    meta_test_acc.append(evaluation_accuracy.item())
-    prof_test.log(row = [np.array(meta_test_acc).mean(), np.array(meta_test_acc).std(
-    ), np.array(meta_test_loss).mean(), np.array(meta_test_loss).std()])
-    print('Meta Test Accuracy', np.array(meta_test_acc).mean(), '+-', np.array(meta_test_acc).std())
-    
+for model_name in os.listdir(args.model_path):
+    learner = torch.load('{}/{}'.format(args.model_path, model_name))
+    learner = learner.to(args.device)
+    print('Testing on held out classes')
+    for i, tetask in enumerate(test_tasks):
+        
+        model = learner.clone()
+        #tetask = test_tasks.sample()
+        evaluation_loss, evaluation_accuracy, logits, labels = inner_adapt_maml(
+            tetask, loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_test, args.device)
+        
+        # Logging test-task logits and ground-truth labels
+        tmp = np.array(torch.cat([torch.full((args.n_ways*args.q_shots, 1), i), logits, labels.unsqueeze(dim=1)], axis=1))
+        profiler.log_csv(tmp, 'preds')
+        
+        # Logging per test-task losses and accuracies
+        tmp = [i, evaluation_accuracy.item()]
+        tmp = tmp + [model_name]
+        profiler.log_csv(tmp, 'test')
+

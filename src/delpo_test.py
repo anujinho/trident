@@ -132,11 +132,11 @@ for model_name in os.listdir(args.model_path):
             if args.extra == 'Yes':
                 dl_0 = {"label_latents": [mu_l_0, log_var_l_0],
                   "style_latents": [mu_s_0, log_var_s_0]}
-                profiler.log_data(dl_0, iter, 'latents_0', 'test')
+                profiler.log_data(dl_0, i, 'latents_0', 'test')
 
             dl = {"label_latents": [mu_l, log_var_l],
                   "style_latents": [mu_s, log_var_s]}
-            profiler.log_data(dl, iter, 'latents', 'test')  
+            profiler.log_data(dl, i, 'latents', 'test')  
 
             # wandb.log(dict({f"test/{key}": loss.item() for _, (key, loss) in enumerate(evaluation_loss.items())},
             #             **{'test/accuracies': evaluation_accuracy.item(), 'test/task': i}))
