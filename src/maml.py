@@ -15,6 +15,7 @@ from src.utils2 import Profiler
 # Parameters #
 ##############
 parser = argparse.ArgumentParser()
+parser.add_argument('--cnfg', type=str)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--root', type=str)
 parser.add_argument('--n-ways', type=int)
