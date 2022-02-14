@@ -68,4 +68,4 @@ def inner_adapt_maml(task, loss, learner, n_ways, k_shots, q_shots, adapt_steps,
     preds = learner(queries)
     eval_loss = loss(preds, queries_labels)
     eval_acc = accuracy(preds, queries_labels)
-    return eval_loss, eval_acc, preds, queries_labels
+    return eval_loss, eval_acc, preds.detach().to('cpu'), queries_labels.detach().to('cpu')
