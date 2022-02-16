@@ -432,7 +432,7 @@ if __name__ == '__main__':
     # train_dataset = l2l.data.MetaDataset(train_dataset)
     # tasks = l2l.data.TaskDataset(dataset=train_dataset, num_tasks=1000)
     image_trans = transforms.Compose([transforms.ToTensor(), transforms.Resize([84,84])])
-    train_dataset = CUBirds200(root='../dataset', mode='train', transform=image_trans)
+    train_dataset = CUBirds200(root='../dataset', mode='test', transform=image_trans)
     data = l2l.data.MetaDataset(train_dataset)
     trans = [
                 l2l.data.transforms.NWays(data, n=5),
