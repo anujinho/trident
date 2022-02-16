@@ -522,8 +522,8 @@ class CEncoder(nn.Module):
 
     def forward(self, x):
         x = self.net(x)
-        if self.args.backbone[0]:
-            x = nn.Flatten()(x)
+#        if self.args.backbone[0]:
+#            x = nn.Flatten()(x)
         return x
 
 # Figure out how to circumvent the self.args bullshit 

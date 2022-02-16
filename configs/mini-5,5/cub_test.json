@@ -1,5 +1,5 @@
 {
-"dataset": "miniimagenet",
+"dataset": "cub",
 "root": "../../dataset",
 "model_path": "/home/nfs/anujsingh/meta_lrng/files/temp3/learning_to_meta-learn/logs/DELPO_miniimagenet_5-way_5-shot_10-queries/models-8.2-tafe",
 "n_ways": 5,
@@ -21,5 +21,5 @@
 "order": "False",
 "device": "cuda",
 "times": 1,
-"extra": "Yes"
+"extra": "No"
 }

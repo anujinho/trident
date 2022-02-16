@@ -115,7 +115,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     data, labels = task
     if args.dataset == 'miniimagenet':
         data, labels = data.to(device) / 255.0, labels.to(device)
-    elif (args.dataset == 'omniglot') or (args.dataset == 'cifarfs') or (args.dataset == 'tiered'):
+    elif (args.dataset == 'omniglot') or (args.dataset == 'cifarfs') or (args.dataset == 'tiered') or (args.dataset == 'cub'):
         data, labels = data.to(device), labels.to(device)
     total = n_ways * (k_shots + q_shots)
     queries_index = np.zeros(total)
