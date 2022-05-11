@@ -111,7 +111,7 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args):
+def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args, extra="No"):
     data, labels = task
     if args.dataset == 'miniimagenet':
         data, labels = data.to(device) / 255.0, labels.to(device)
@@ -130,7 +130,7 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
     queries_labels = labels[np.where(queries_index == 1)]
 
     # Logging latent spaces of queries before meta-adaptation
-    if args.extra == "Yes":
+    if extra == "Yes":
         if args.task_adapt:
             reconst_image, logits, mu_l_0, log_var_l_0, mu_s_0, log_var_s_0 = learner(
                 torch.cat([support, queries], dim=0), 'outer')
@@ -161,9 +161,9 @@ def inner_adapt_delpo(task, reconst_loss, learner, n_ways, k_shots, q_shots, ada
                      logits, queries_labels, mu_s, log_var_s, mu_l, log_var_l, args.wt_ce, args.klwt, args.rec_wt, args.beta_l, args.beta_s)
     eval_acc = accuracy(F.softmax(logits, dim=1), queries_labels)
 
-    if log_data and (args.extra == 'Yes'):
+    if log_data and (extra == 'Yes'):
         return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu'), logits.detach().to('cpu'), queries_labels.detach().to('cpu'), mu_l_0.detach().to('cpu'), log_var_l_0.detach().to('cpu'), mu_s_0.detach().to('cpu'), log_var_s_0.detach().to('cpu')
-    elif log_data and (args.extra == 'No'):
+    elif log_data and (extra == 'No'):
         return eval_loss, eval_acc, reconst_image.detach().to('cpu'), queries.detach().to('cpu'), mu_l.detach().to('cpu'), log_var_l.detach().to('cpu'), mu_s.detach().to('cpu'), log_var_s.detach().to('cpu'), logits.detach().to('cpu'), queries_labels.detach().to('cpu')
     else:
         return eval_loss, eval_acc
