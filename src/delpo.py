@@ -113,7 +113,6 @@ elif args.order == True:
     profiler = Profiler('FO-DELPO_{}_{}-way_{}-shot_{}-queries'.format(
         args.dataset, args.n_ways, args.k_shots, args.q_shots), args.experiment, args)
 
-
 ## Training ##
 for iter in tqdm.tqdm(range(start, args.iterations)):
     opt.zero_grad()
@@ -123,7 +122,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         ttask = train_tasks.sample()
         model = learner.clone()
         if (iter % 500 == 0) & (batch == 0):
-            evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
+            evaluation_loss, evaluation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s, logits, queries_labels = inner_adapt_delpo(
                 ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
 
             # Logging train-task images and latents
@@ -154,7 +153,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     vtask = valid_tasks.sample()
     model = learner.clone()
     if iter % 500 == 0:
-        validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s = inner_adapt_delpo(
+        validation_loss, validation_accuracy, reconst_img, query_imgs, mu_l, log_var_l, mu_s, log_var_s, logits, queries_labels = inner_adapt_delpo(
             vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, True, args)
         # Logging valid-task images and latents
         di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
