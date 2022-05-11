@@ -9,6 +9,7 @@
 "inner_adapt_steps_test": 5,
 "inner_lr": 0.0014,
 "meta_lr": 0.00014,
+"backbone": ["False", "", ""],
 "meta_batch_size": 20,
 "iterations": 100000,
 "wt_ce": 100,

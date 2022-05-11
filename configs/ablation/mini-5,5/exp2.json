@@ -7,6 +7,7 @@
 "q_shots": 10,
 "inner_adapt_steps_train": 5,
 "inner_adapt_steps_test": 5,
+"backbone": ["False", "", ""],
 "inner_lr": 0.0014,
 "meta_lr": 0.00014,
 "meta_batch_size": 20,
