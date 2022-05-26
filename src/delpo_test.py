@@ -128,6 +128,11 @@ for model_name in os.listdir(args.model_path):
             tmp = tmp + [model_name]
             profiler.log_csv(tmp, 'test_all') if args.times > 1 else profiler.log_csv(tmp, 'test')
 
+            # Logging test-task images and latents
+            di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
+            profiler.log_data(di, iter, 'images', 'test')
+            profiler.log_data(dl, iter, 'latents', 'test')
+
             # Logging latents before and after adaptation
             if args.extra == 'Yes':
                 dl_0 = {"label_latents": [mu_l_0, log_var_l_0],
