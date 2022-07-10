@@ -22,7 +22,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=600)
         learner = CCVAE(in_channels=3, base_channels=32,
-                        n_ways=n_ways, dataset='miniimagenet', task_adapt=task_adapt, args=args, latent_dim_l=args.zl, latent_dim_s=args.zs)
+                        n_ways=n_ways, task_adapt=task_adapt, args=args, latent_dim_l=args.zl, latent_dim_s=args.zs)
 
     elif (dataset == 'tiered'):
         image_trans = transforms.Compose([transforms.ToTensor()])
@@ -33,7 +33,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=download, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=2000)
         learner = CCVAE(in_channels=3, base_channels=32,
-                        n_ways=n_ways, dataset='tiered', task_adapt=task_adapt, args=args, latent_dim_l=args.zl, latent_dim_s=args.zs)
+                        n_ways=n_ways, task_adapt=task_adapt, args=args, latent_dim_l=args.zl, latent_dim_s=args.zs)
 
     elif (dataset == 'cub'):
         image_trans = transforms.Compose([transforms.ToTensor(), transforms.Resize([84,84])])
@@ -44,7 +44,7 @@ def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, down
         test_tasks = gen_tasks(dataset, root, image_transforms=image_trans, download=True, mode='test',
                                n_ways=n_ways, k_shots=k_shots, q_shots=q_shots, num_tasks=2000)
         learner = CCVAE(in_channels=3, base_channels=32,
-                        n_ways=n_ways, dataset='miniimagenet', task_adapt=task_adapt, args=args)
+                        n_ways=n_ways, task_adapt=task_adapt, args=args)
 
     learner = learner.to(device)
     # allow_nograd=True if args.pretrained[2]=='freeze' else False
