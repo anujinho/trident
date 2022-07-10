@@ -8,7 +8,7 @@ from data.taskers import gen_tasks
 from PIL.Image import LANCZOS
 from torchvision import transforms
 
-from src.zoo.archs import CCVAE
+from src.zoo.archs_og import CCVAE
 
 
 def setup(dataset, root, n_ways, k_shots, q_shots, order, inner_lr, device, download, task_adapt, task_adapt_fn, args):
