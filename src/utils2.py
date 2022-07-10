@@ -10,7 +10,7 @@ class Profiler():
         #columns = columns.append(additional)
         df = pd.DataFrame(columns=self.columns)
         self.args = args
-        self.path = '/home/nfs/anujsingh/meta_lrng/files/learning_to_meta-learn/logs/' + name + '/' + experiment
+        self.path = '/home/nfs/anujsingh/meta_lrng/files/folder/learning_to_meta-learn/logs/' + name + '/' + experiment
         os.makedirs(self.path, mode=0o777)
 
         self.path_train = self.path + '/' + 'train.csv'

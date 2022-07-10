@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from src.utils2 import Profiler
-from zoo.trident_utils import inner_adapt_trident, setup
+from src.zoo.trident_utils import inner_adapt_trident, setup
 
 ##############
 # Parameters #
