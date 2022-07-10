@@ -16,6 +16,8 @@
 "rec_wt": 1,
 "beta_l": 1,
 "beta_s": 1,
+"zl": 64,
+"zs": 64,
 "task_adapt": "True",
 "experiment": "exp2.1-attfex",
 "order": "False",
