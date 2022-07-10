@@ -73,7 +73,7 @@ elif args.task_adapt == 'False':
 
 
 # Generating Tasks, initializing learners, loss, meta - optimizer and profilers
-_, valid_tasks, _, _ = setup(
+_, valid_tasks, _, learner = setup(
     args.dataset, args.root, args.n_ways, args.k_shots, args.q_shots, args.order, args.inner_lr, args.device, download=args.download, task_adapt=args.task_adapt, args=args)
 reconst_loss = nn.MSELoss(reduction='none')
 if args.order == False:
@@ -88,7 +88,7 @@ elif args.order == True:
 ## Testing ##
 
 for model_name in os.listdir(args.model_path):
-    learner = torch.load('{}/{}'.format(args.model_path, model_name))
+    learner.load_state_dict(torch.load('{}/{}'.format(args.model_path, model_name), map_location=args.device))
     learner = learner.to(args.device)
     print('Testing models on held out validation classes')
 
