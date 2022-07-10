@@ -8,7 +8,7 @@ import torch
 from torch import nn, optim
 
 from src.utils2 import Profiler
-from src.zoo.delpo_utils import inner_adapt_delpo, setup
+from zoo.trident_utils import inner_adapt_delpo, setup
 
 #import wandb
 

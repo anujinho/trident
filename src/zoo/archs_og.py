@@ -398,8 +398,13 @@ class GaussianParametrizer(nn.Module):
         super(GaussianParametrizer, self).__init__()
 
         self.args = args
-        self.h1 = nn.Linear(feature_dim, latent_dim)
-        self.h2 = nn.Linear(feature_dim, latent_dim)
+
+        if (args.dataset == 'omniglot') or (args.dataset == 'cifarfs'):
+            self.h1 = nn.Linear(feature_dim, latent_dim)
+            self.h2 = nn.Linear(feature_dim, latent_dim)
+        elif (args.dataset == 'miniimagenet') or (args.dataset == 'tiered'):
+            self.h1 = nn.Linear(feature_dim, latent_dim)
+            self.h2 = nn.Linear(feature_dim, latent_dim)
 
     def forward(self, x):
         mu = self.h1(x)
@@ -413,7 +418,9 @@ class CEncoder(nn.Module):
     def __init__(self,
                  num_input_channels: int,
                  base_channel_size: int,
+                 dataset: str,
                  args,
+                 backbone_flag: bool,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -425,47 +432,203 @@ class CEncoder(nn.Module):
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
-        
-        self.net = nn.Sequential(
-            nn.Conv2d(num_input_channels, c_hid,
-                        kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+        self.backbone_flag = backbone_flag
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 9x9 # 21 x 21
+        if dataset == 'omniglot':
+            self.net = nn.Sequential(
+                nn.Conv2d(num_input_channels, c_hid,
+                          kernel_size=3, padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 14
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                nn.Conv2d(c_hid, c_hid, kernel_size=3,
+                          padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 7
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 1x1 # 5 x 5
-            nn.Flatten()
-        )
+                nn.Conv2d(c_hid, c_hid, kernel_size=3,
+                          padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 4
+
+                nn.Conv2d(c_hid, c_hid, kernel_size=3,
+                          padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 2
+
+                nn.Flatten()
+            )
+
+        elif (dataset == 'miniimagenet') or (dataset == 'cifarfs') or (dataset == 'tiered'):
+            if self.backbone_flag == True:
+                if self.args.dataset == 'miniimagenet':
+                    dataset = 'mini-imagenet'
+                elif self.args.dataset == 'tiered':
+                    dataset = 'tiered-imagenet'
+
+                if args.backbone[2] == 'pretrained':
+                    self.net = l2l.vision.models.get_pretrained_backbone(
+                        model='wrn28', dataset=dataset, root='"/home/nfs/anujsingh/meta_lrng/files/dataset/backbones/', download=True)
+                elif args.backbone[2] == 'scratch':
+                    self.net = ResNet12Backbone(
+                        args, avg_pool=True)  # F => 16000; T => 640
+                # Make trainable
+                for p in self.net.parameters():
+                    p.requires_grad = True
+
+                self.net.to(args.device)
+                # # Load the weights
+                # weights = torch.load(args.backbone[1], map_location='cpu')
+                # self.net.load_state_dict(weights)
+
+                # self.net = ResNet12Backbone(
+                #     args, avg_pool=True)  # F => 16000; T => 640
+                # if args.backbone[2] == 'pretrained':
+                #     # Load the weights
+                #     weights = torch.load(args.backbone[1], map_location='cpu')
+                #     self.net.load_state_dict(weights)
+                # self.net.to(args.device)
+                # # Make trainable
+                # for p in self.net.parameters():
+                #     p.requires_grad = True
+
+            else:
+                self.net = nn.Sequential(
+                    nn.Conv2d(num_input_channels, c_hid,
+                              kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 1x1 # 5 x 5
+                    nn.Flatten()
+                )
 
     def forward(self, x):
         x = self.net(x)
-
+#        if self.args.backbone[0]:
+#            x = nn.Flatten()(x)
         return x
+
+# Figure out how to circumvent the self.args bullshit 
+
+# class TAFE(nn.Module):
+#     """ Transductive Attention based Feature Extractor that uses 1x1 Convs as Query, Key and Value extractors
+#     from per Channel Image feature maps and then uses Attention to finally create per channel transductive-masks. """
+
+#     def __init__(self,
+#                  args,
+#                  act_fn: object = nn.ReLU):
+#         """
+#         Inputs:
+#             - args: dict of arguments
+#             - act_fn : Activation function used throughout the encoder network
+#         """
+
+#         super(TAFE, self).__init__()
+#         self.args = args
+#         self.n = args.n_ways * (args.k_shots + args.q_shots)
+#         # self.fe = nn.Sequential(
+#         #     nn.Conv2d(in_channels=self.n, out_channels=64, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
+#         #     act_fn(),
+#         #     nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False),
+#         #     act_fn()
+#         # )
+
+#         # # Query, Key and Value extractors as 1x1 Convs
+#         # self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+#         # self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+#         # self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(1,1), stride=(1,1), padding='valid', bias=False)
+
+#         self.fe = nn.Sequential(
+#             nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+#                 self.n, 1), stride=(1, 1), padding='valid', bias=False),
+#             act_fn(),
+
+#             nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+#                 1, 1), stride=(1, 1), padding='valid', bias=False),
+#             act_fn())
+
+#         # Query, Key and Value extractors as 1x1 Convs
+#         self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+#             1, 1), stride=(1, 1), padding='valid', bias=False)
+#         self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+#             1, 1), stride=(1, 1), padding='valid', bias=False)
+#         self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+#             1, 1), stride=(1, 1), padding='valid', bias=False)
+
+#     def forward(self, x, update: str):
+
+#         G = x.permute(2, 3, 0, 1)
+#         G = G.reshape(G.shape[0] * G.shape[1],
+#                       G.shape[2], G.shape[3]).unsqueeze(dim=1)
+#         G = self.fe(G)
+#         xq = self.f_q(G)
+#         xk = self.f_k(G)
+#         xv = self.f_v(G)
+#         xq = xq.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+#         xk = xk.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+#         xv = xv.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+
+#         # # Inter-Image convolutional comparisons for feature extraction
+#         # g = x.permute(1,0,2,3)
+#         # g = self.fe(g)
+
+#         # # Preparing Q, K, V
+#         # xq = self.f_q(g)
+#         # xk = self.f_k(g)
+#         # xv = self.f_v(g)
+#         # xq = xq.squeeze()
+#         # xk = xk.squeeze()
+#         # xv = xv.squeeze()
+
+#         # Attention Block
+#         xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
+#         xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
+#         xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
+
+#         g = torch.mm(xq, xk.transpose(0, 1))
+#         softmax = nn.Softmax(dim=-1)
+#         g = softmax(g)
+#         g = torch.mm(g, xv)
+#         #del xq, xk, xv
+
+#         # Transductive Mask transformed input
+#         g = g.reshape(-1, x.shape[2], x.shape[3])
+#         if update == 'inner':
+#             x = x[:self.args.n_ways*self.args.k_shots] * g
+#         elif update == 'outer':
+#             x = x[self.args.n_ways*self.args.k_shots:] * g
+
+#         x = nn.Flatten()(x)
+
+#         return x
 
 
 class TADCEncoder(nn.Module):
-    """ Convolutional Encoder to transform an input image into its task/episode aware feature embedding. 
-        TAsk Dependent Convolutional Encoder--TADCEncoder """
+    """ Convolutional Encoder to transform an input image into its task/episode aware feature embedding. """
 
     def __init__(self,
                  num_input_channels: int,
                  base_channel_size: int,
+                 dataset: str,
+                 task_adapt_fn: str,
                  args,
                  act_fn: object = nn.ReLU):
         """
@@ -481,101 +644,194 @@ class TADCEncoder(nn.Module):
         super(TADCEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
+        self.task_adapt_fn = task_adapt_fn
 
-        self.net = nn.Sequential(
-            nn.Conv2d(num_input_channels, c_hid,
-                        kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+        if self.args.dataset == 'omniglot':
+            self.net = nn.Sequential(
+                nn.Conv2d(num_input_channels, c_hid,
+                          kernel_size=3, padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 14
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 9x9 # 21 x 21
+                nn.Conv2d(c_hid, c_hid, kernel_size=3,
+                          padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 7
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2),  # 3x3 # 10 x 10
+                nn.Conv2d(c_hid, c_hid, kernel_size=3,
+                          padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),  # 4
 
-            # nn.ZeroPad2d(conv_padding),
-            nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
-            nn.MaxPool2d(2)  # 1x1 # 5 x 5
-        )
+                nn.Conv2d(c_hid, c_hid, kernel_size=3,
+                          padding=1, stride=(2, 2)),
+                nn.BatchNorm2d(c_hid),
+                act_fn()  # 2
+            )
+
+        elif (self.args.dataset == 'miniimagenet') or (self.args.dataset == 'cifarfs') or (self.args.dataset == 'tiered'):
+
+            if args.backbone[0] == True:
+                if args.backbone[2] == 'pretrained':
+                    self.net = WRN28Backbone()
+                    weights = torch.load(args.backbone[1], map_location='cpu')
+                    self.net.load_state_dict(weights)
+
+                elif args.backbone[2] == 'scratch':
+                    self.net = ResNet12Backbone(
+                        args, avg_pool=True)  # F => 16000; T => 640
+                # Make trainable
+                for p in self.net.parameters():
+                    p.requires_grad = True
+
+                self.net.to(args.device)
+                # # Load the weights
+                # weights = torch.load(args.backbone[1], map_location='cpu')
+                # self.net.load_state_dict(weights)
+
+            else:
+                self.net = nn.Sequential(
+                    nn.Conv2d(num_input_channels, c_hid,
+                              kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 9x9 # 21 x 21
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2),  # 3x3 # 10 x 10
+
+                    # nn.ZeroPad2d(conv_padding),
+                    nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(c_hid),
+                    act_fn(),
+                    nn.MaxPool2d(2)  # 1x1 # 5 x 5
+                )
 
         self.n = args.n_ways * (args.k_shots + args.q_shots)
-        
-        ## AttFEX Module ##
-        # 1x1 Convs representing M(.), N(.)
-        self.fe = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
-                self.n, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn(),
+        if self.task_adapt_fn == 'eaen':
+            self.eaen = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+                    self.n, 1), stride=(1, 1), padding='valid', bias=False),
+                # P
+                act_fn(),
 
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
-                1, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn())
+                nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+                    1, 1), stride=(1, 1), padding='valid', bias=False),
+                # Z
+                act_fn(),
 
-        # Query, Key and Value extractors as 1x1 Convs
-        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-            1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-            1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
-            1, 1), stride=(1, 1), padding='valid', bias=False)
+                nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                    1, 1), stride=(1, 1), padding='valid', bias=False),
+                # F
+                act_fn(),
+            )
+
+        #self.tafe = TAFE(self.args)
+        elif self.task_adapt_fn == 'tafe':
+            self.fe = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+                    self.n, 1), stride=(1, 1), padding='valid', bias=False),
+                act_fn(),
+
+                nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+                    1, 1), stride=(1, 1), padding='valid', bias=False),
+                act_fn())
+
+            # Query, Key and Value extractors as 1x1 Convs
+            self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False)
+            self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False)
+            self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+                1, 1), stride=(1, 1), padding='valid', bias=False)
 
     def forward(self, x, update: str):
         x = self.net(x)
 
-        # Task aware embeddings using AttFEX
+        # Task aware embeddings
 
-        G = x.permute(2, 3, 0, 1)
-        G = G.reshape(G.shape[0] * G.shape[1],
-                        G.shape[2], G.shape[3]).unsqueeze(dim=1)
-        G = self.fe(G)
+        if self.task_adapt_fn == 'eaen':
+            G = x.permute(2, 3, 0, 1)
+            G = G.reshape(G.shape[0] * G.shape[1],
+                          G.shape[2], G.shape[3]).unsqueeze(dim=1)
+            G = self.eaen(G)
+            G = G.squeeze().transpose(0, 1).reshape(-1, x.shape[2], x.shape[3])
+            if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots] * G
+            elif update == 'outer':
+                x = x[self.args.n_ways*self.args.k_shots:] * G
+            x = nn.Flatten()(x)
 
-        if (self.args.dataset == 'tiered' and self.args.k_shots == 5) or (self.args.dataset == 'miniimagenet' and self.args.k_shots == 5):
-            xq = self.f_q(G)
-            xq = nn.ReLU()(xq)
-            xk = self.f_k(G)
-            xk = nn.ReLU()(xk)
-            xv = self.f_v(G)
-            xv = nn.ReLU()(xv)
-        else:
-            xq = self.f_q(G)
-            xk = self.f_k(G)
-            xv = self.f_v(G)
+        elif self.task_adapt_fn == 'tafe':
+            #x = self.tafe(x, update)
+            #x = x.reshape(x.shape[0], 640, 1, 1)
 
-        xq = xq.squeeze(dim=1).squeeze(dim=1).transpose(
-            0, 1).reshape(-1, x.shape[2], x.shape[3])
-        xk = xk.squeeze(dim=1).squeeze(dim=1).transpose(
-            0, 1).reshape(-1, x.shape[2], x.shape[3])
-        xv = xv.squeeze(dim=1).squeeze(dim=1).transpose(
-            0, 1).reshape(-1, x.shape[2], x.shape[3])
+            G = x.permute(2, 3, 0, 1)
+            G = G.reshape(G.shape[0] * G.shape[1],
+                          G.shape[2], G.shape[3]).unsqueeze(dim=1)
+            G = self.fe(G)
 
-        # Attention Block
-        xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
-        xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
-        xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
+            if (self.args.dataset == 'omniglot') or (self.args.dataset == 'tiered' and self.args.k_shots == 5) or (self.args.dataset == 'miniimagenet' and self.args.k_shots == 5):
+                xq = self.f_q(G)
+                xq = nn.ReLU()(xq)
+                xk = self.f_k(G)
+                xk = nn.ReLU()(xk)
+                xv = self.f_v(G)
+                xv = nn.ReLU()(xv)
+            else:
+                xq = self.f_q(G)
+                xk = self.f_k(G)
+                xv = self.f_v(G)
 
-        G = torch.mm(xq, xk.transpose(0, 1)/xk.shape[1]**0.5)
-        softmax = nn.Softmax(dim=-1)
-        G = softmax(G)
-        G = torch.mm(G, xv)
+            xq = xq.squeeze(dim=1).squeeze(dim=1).transpose(
+                0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xk = xk.squeeze(dim=1).squeeze(dim=1).transpose(
+                0, 1).reshape(-1, x.shape[2], x.shape[3])
+            xv = xv.squeeze(dim=1).squeeze(dim=1).transpose(
+                0, 1).reshape(-1, x.shape[2], x.shape[3])
 
-        # Transductive Mask transformed input
-        G = G.reshape(-1, x.shape[2], x.shape[3])
-        if update == 'inner':
-            x = x[:self.args.n_ways*self.args.k_shots] * G
-        elif update == 'outer':
-            x = x[self.args.n_ways*self.args.k_shots:] * G
+            # Attention Block
+            xq = xq.reshape(xq.shape[0], xq.shape[1]*xq.shape[2])
+            xk = xk.reshape(xk.shape[0], xk.shape[1]*xk.shape[2])
+            xv = xv.reshape(xv.shape[0], xv.shape[1]*xv.shape[2])
 
-        x = nn.Flatten()(x)
+            G = torch.mm(xq, xk.transpose(0, 1)/xk.shape[1]**0.5)
+            softmax = nn.Softmax(dim=-1)
+            G = softmax(G)
+            G = torch.mm(G, xv)
+            #del xq, xk, xv
+
+            # Transductive Mask transformed input
+            G = G.reshape(-1, x.shape[2], x.shape[3])
+            if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots] * G
+            elif update == 'outer':
+                x = x[self.args.n_ways*self.args.k_shots:] * G
+
+            x = nn.Flatten()(x)
+
+        elif self.task_adapt_fn == 'gks':
+            G = x.reshape(self.n, -1)
+            A = torch.cdist(G, G, p=2) ** 2
+            A = A / A.var()  # Normalized adjacency matrix
+            D = torch.diag(A.sum(dim=1).pow(-0.5))
+            L = torch.matmul(torch.matmul(D, A), D)  # Laplacian Matrix
+            I = torch.eye(self.n, self.n).to(self.args.device)
+            P = torch.linalg.inv(I - self.args.alpha * L)  # Propagator Matrix
+            x = torch.matmul(P, G)
+            if update == 'inner':
+                x = x[:self.args.n_ways*self.args.k_shots]
+            elif update == 'outer':
+                x = x[self.args.n_ways*self.args.k_shots:]
 
         return x
 
@@ -587,6 +843,7 @@ class CDecoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  latent_dim: int,
+                 dataset: str,
                  act_fn: object = nn.ReLU):
         """
         Inputs:
@@ -598,46 +855,92 @@ class CDecoder(nn.Module):
         super(CDecoder, self).__init__()
         c_hid = base_channel_size
         self.dataset = dataset
-        
-        self.linear = nn.Sequential(
-            nn.Linear(latent_dim, 25*c_hid),
-            act_fn()
-        )
-        a1 = 10
-        a2 = 21
-        a3 = 42
-        a4 = 84
+        if self.dataset == 'omniglot':
+            self.linear = nn.Sequential(
+                nn.Linear(latent_dim, 4*c_hid),
+                act_fn()
+            )
+            self.net = nn.Sequential(
+                nn.UpsamplingNearest2d(size=(4, 4)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
 
-        self.net = nn.Sequential(
+                nn.UpsamplingNearest2d(size=(7, 7)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
 
-            nn.UpsamplingNearest2d(size=(a1, a1)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                        kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
+                nn.UpsamplingNearest2d(size=(14, 14)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
 
-            nn.UpsamplingNearest2d(size=(a2, a2)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                        kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
+                nn.UpsamplingNearest2d(size=(28, 28)),
+                nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(num_input_channels),
+                nn.Sigmoid()
+            )
 
-            nn.UpsamplingNearest2d(size=(a3, a3)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                        kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
-            act_fn(),
+        elif (self.dataset == 'miniimagenet') or (self.dataset == 'cifarfs') or (self.dataset == 'tiered'):
+            if (self.dataset == 'miniimagenet') or (self.dataset == 'tiered'):
+                self.linear = nn.Sequential(
+                    nn.Linear(latent_dim, 25*c_hid),
+                    act_fn()
+                )
+                a1 = 10
+                a2 = 21
+                a3 = 42
+                a4 = 84
+            elif self.dataset == 'cifarfs':
+                self.linear = nn.Sequential(
+                    nn.Linear(latent_dim, 4*c_hid),
+                    act_fn()
+                )
+                a1 = 4
+                a2 = 8
+                a3 = 16
+                a4 = 32
 
-            nn.UpsamplingNearest2d(size=(a4, a4)),
-            nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
-                        kernel_size=3, padding='same'),
-            nn.BatchNorm2d(num_input_channels),
-            nn.Sigmoid()
-        )
+            self.net = nn.Sequential(
+
+                nn.UpsamplingNearest2d(size=(a1, a1)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+
+                nn.UpsamplingNearest2d(size=(a2, a2)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+
+                nn.UpsamplingNearest2d(size=(a3, a3)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn(),
+
+                nn.UpsamplingNearest2d(size=(a4, a4)),
+                nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
+                          kernel_size=3, padding='same'),
+                nn.BatchNorm2d(num_input_channels),
+                nn.Sigmoid()
+            )
 
     def forward(self, x):
-        x = self.linear(x)
-        x = x.reshape(x.shape[0], -1, 5, 5)
+        if (self.dataset == 'omniglot') or (self.dataset == 'cifarfs'):
+            x = self.linear(x)
+            x = x.reshape(x.shape[0], -1, 2, 2)
+        elif (self.dataset == 'miniimagenet') or (self.dataset == 'tiered'):
+            #x = x.unsqueeze(-1).unsqueeze(-1)
+            x = self.linear(x)
+            x = x.reshape(x.shape[0], -1, 5, 5)
         x = self.net(x)
         return x
 
@@ -680,7 +983,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_l drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, task_adapt, args, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, dataset, task_adapt, task_adapt_fn, args, act_fn: object = nn.ReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -688,17 +991,21 @@ class Classifier_VAE(nn.Module):
         self.latent_dim_s = latent_dim_s
         self.classes = n_ways
         self.task_adapt = task_adapt
+        self.task_adapt_fn = task_adapt_fn
 
-    
-        fcoeff = 25
-        fsize = fcoeff*self.base_channels
+        if args.backbone[0] == True:
+            fsize = 640
+        else:
+            fcoeff = 25 if (dataset == 'miniimagenet') or (
+                dataset == 'tiered') else 4
+            fsize = fcoeff*self.base_channels
 
         if self.task_adapt:
             self.encoder = TADCEncoder(num_input_channels=self.in_channels,
-                                       base_channel_size=self.base_channels, args=args)
+                                       base_channel_size=self.base_channels, dataset=dataset, task_adapt_fn=self.task_adapt_fn, args=args)
         else:
             self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                    base_channel_size=self.base_channels, args=args)
+                                    base_channel_size=self.base_channels, dataset=dataset, args=args, backbone_flag=args.backbone[0])
 
         self.gaussian_parametrizer = GaussianParametrizer(
             latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
@@ -730,30 +1037,32 @@ class Classifier_VAE(nn.Module):
 class CCVAE(nn.Module):
     """ Module for a Conditional-Convolutional VAE: Classifier-VAE + Convolutional Encoder-Decoder. 
     The Conv. Encoder-Decoder is conditioned on the z_l drawn from the class-latent gaussian distribution 
-    for reconstructing the input image.
-    The Classifier VAE is conditioned on the z_s drawn from the semantic-latent gaussian distribution for inference of z_l. """
+    for reconstructing the input image. """
 
-    def __init__(self, in_channels, base_channels, n_ways, task_adapt, args, latent_dim_l, latent_dim_s):
+    def __init__(self, in_channels, base_channels, n_ways, dataset, task_adapt, task_adapt_fn, args, latent_dim_l, latent_dim_s):
         super(CCVAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
+        self.dataset = dataset
         self.latent_dim_l = latent_dim_l
         self.latent_dim_s = latent_dim_s
         self.classes = n_ways
         self.task_adapt = task_adapt
+        self.task_adapt_fn = task_adapt_fn
         self.args = args
 
-        fcoeff = 25
+        fcoeff = 25 if (dataset == 'miniimagenet') or (
+            dataset == 'tiered') else 4
         fsize = fcoeff*self.base_channels
 
         self.encoder = CEncoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, args=args)
+                                base_channel_size=self.base_channels, dataset=self.dataset, args=args, backbone_flag=False)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l))
+                                base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), dataset=self.dataset)
 
         self.classifier_vae = Classifier_VAE(
-            in_channels=self.in_channels, base_channels=self.base_channels, latent_dim_l=self.latent_dim_l, latent_dim_s=self.latent_dim_s, n_ways=self.classes, task_adapt=task_adapt, args=self.args)
+            in_channels=self.in_channels, base_channels=self.base_channels, latent_dim_l=self.latent_dim_l, latent_dim_s=self.latent_dim_s, n_ways=self.classes, dataset=dataset, task_adapt=task_adapt, task_adapt_fn=task_adapt_fn, args=self.args)
 
         self.gaussian_parametrizer = GaussianParametrizer(
             latent_dim=self.latent_dim_s, feature_dim=fsize, args=args)

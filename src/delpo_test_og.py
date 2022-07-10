@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from src.utils2 import Profiler
-from src.zoo.delpo_utils import inner_adapt_delpo, setup
+from zoo.trident_utils import inner_adapt_delpo, setup
 
 #import wandb
 
@@ -130,8 +130,7 @@ for model_name in os.listdir(args.model_path):
 
             # Logging test-task images and latents
             di = {"reconst_examples": reconst_img, "gt_examples": query_imgs}
-            profiler.log_data(di, iter, 'images', 'test')
-            profiler.log_data(dl, iter, 'latents', 'test')
+            profiler.log_data(di, i, 'images', 'test')
 
             # Logging latents before and after adaptation
             if args.extra == 'Yes':

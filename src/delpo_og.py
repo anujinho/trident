@@ -7,11 +7,7 @@ import torch
 from torch import nn, optim
 
 from src.utils2 import Profiler
-from src.zoo.delpo_utils import inner_adapt_delpo, setup
-
-#import wandb
-
-#wandb.init(project="meta", entity='anujinho', config={})
+from zoo.trident_utils import inner_adapt_delpo, setup
 
 ##############
 # Parameters #

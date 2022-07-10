@@ -1,0 +1,23 @@
+{
+"dataset": "miniimagenet",
+"root": "../../dataset/mini_imagenet",
+"n_ways": 5,
+"k_shots": 1,
+"q_shots": 10,
+"inner_adapt_steps_train": 5,
+"inner_adapt_steps_test": 5,
+"inner_lr": 0.001,
+"meta_lr": 0.0001,
+"meta_batch_size": 20,
+"iterations": 100000,
+"reconstr": "pp",
+"wt_ce": 1,
+"klwt": "False",
+"rec_wt": 1,
+"beta_l": 1,
+"beta_s": 1,
+"task_adapt": "True",
+"experiment": "exp1.1-attfex",
+"order": "False",
+"device": "cuda"
+}

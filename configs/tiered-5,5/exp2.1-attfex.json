@@ -1,0 +1,23 @@
+{
+"dataset": "tiered",
+"root": "../../dataset",
+"n_ways": 5,
+"k_shots": 5,
+"q_shots": 10,
+"inner_adapt_steps_train": 5,
+"inner_adapt_steps_test": 5,
+"inner_lr": 0.0017,
+"meta_lr": 0.00017,
+"meta_batch_size": 20,
+"iterations": 100000,
+"reconstr": "pp",
+"wt_ce": 1,
+"klwt": "True",
+"rec_wt": 1,
+"beta_l": 1,
+"beta_s": 1,
+"task_adapt": "True",
+"experiment": "exp2.1-attfex",
+"order": "False",
+"device": "cuda"
+}
