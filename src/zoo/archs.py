@@ -425,10 +425,10 @@ class CEncoder(nn.Module):
         super(CEncoder, self).__init__()
         c_hid = base_channel_size
         self.args = args
-        
+
         self.net = nn.Sequential(
             nn.Conv2d(num_input_channels, c_hid,
-                        kernel_size=3, padding=1),
+                      kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
             act_fn(),
             nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -484,7 +484,7 @@ class TADCEncoder(nn.Module):
 
         self.net = nn.Sequential(
             nn.Conv2d(num_input_channels, c_hid,
-                        kernel_size=3, padding=1),
+                      kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
             act_fn(),
             nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
@@ -509,24 +509,24 @@ class TADCEncoder(nn.Module):
         )
 
         self.n = args.n_ways * (args.k_shots + args.q_shots)
-        
+
         ## AttFEX Module ##
         # 1x1 Convs representing M(.), N(.)
         self.fe = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+            nn.Conv2d(in_channels=1, out_channels=self.args.wm_channels, kernel_size=(  # 64 --> args.wm
                 self.n, 1), stride=(1, 1), padding='valid', bias=False),
             act_fn(),
 
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=(
+            nn.Conv2d(in_channels=self.args.wm_channels, out_channels=self.args.wn_channels, kernel_size=(  # 64 --> args.wm, 32 --> args.wn
                 1, 1), stride=(1, 1), padding='valid', bias=False),
             act_fn())
 
         # Query, Key and Value extractors as 1x1 Convs
-        self.f_q = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+        self.f_q = nn.Conv2d(in_channels=self.args.wn_channels, out_channels=1, kernel_size=(  # 32 --> args.wn
             1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_k = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+        self.f_k = nn.Conv2d(in_channels=self.args.wn_channels, out_channels=1, kernel_size=(  # 32 --> args.wn
             1, 1), stride=(1, 1), padding='valid', bias=False)
-        self.f_v = nn.Conv2d(in_channels=32, out_channels=1, kernel_size=(
+        self.f_v = nn.Conv2d(in_channels=self.args.wn_channels, out_channels=1, kernel_size=(  # 32 --> args.wn
             1, 1), stride=(1, 1), padding='valid', bias=False)
 
     def forward(self, x, update: str):
@@ -536,7 +536,7 @@ class TADCEncoder(nn.Module):
 
         G = x.permute(2, 3, 0, 1)
         G = G.reshape(G.shape[0] * G.shape[1],
-                        G.shape[2], G.shape[3]).unsqueeze(dim=1)
+                      G.shape[2], G.shape[3]).unsqueeze(dim=1)
         G = self.fe(G)
 
         if (self.args.dataset == 'tiered' and self.args.k_shots == 5) or (self.args.dataset == 'miniimagenet' and self.args.k_shots == 5):
@@ -598,7 +598,7 @@ class CDecoder(nn.Module):
         super(CDecoder, self).__init__()
         c_hid = base_channel_size
         self.dataset = dataset
-        
+
         self.linear = nn.Sequential(
             nn.Linear(latent_dim, 25*c_hid),
             act_fn()
@@ -612,25 +612,25 @@ class CDecoder(nn.Module):
 
             nn.UpsamplingNearest2d(size=(a1, a1)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                        kernel_size=3, padding='same'),
+                      kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
             act_fn(),
 
             nn.UpsamplingNearest2d(size=(a2, a2)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                        kernel_size=3, padding='same'),
+                      kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
             act_fn(),
 
             nn.UpsamplingNearest2d(size=(a3, a3)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                        kernel_size=3, padding='same'),
+                      kernel_size=3, padding='same'),
             nn.BatchNorm2d(c_hid),
             act_fn(),
 
             nn.UpsamplingNearest2d(size=(a4, a4)),
             nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
-                        kernel_size=3, padding='same'),
+                      kernel_size=3, padding='same'),
             nn.BatchNorm2d(num_input_channels),
             nn.Sigmoid()
         )
@@ -689,7 +689,6 @@ class Classifier_VAE(nn.Module):
         self.classes = n_ways
         self.task_adapt = task_adapt
 
-    
         fcoeff = 25
         fsize = fcoeff*self.base_channels
 
