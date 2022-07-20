@@ -613,25 +613,25 @@ class CDecoder(nn.Module):
             nn.UpsamplingNearest2d(size=(a1, a1)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                       kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
+            #nn.BatchNorm2d(c_hid),
             act_fn(),
 
             nn.UpsamplingNearest2d(size=(a2, a2)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                       kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
+            #nn.BatchNorm2d(c_hid),
             act_fn(),
 
             nn.UpsamplingNearest2d(size=(a3, a3)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                       kernel_size=3, padding='same'),
-            nn.BatchNorm2d(c_hid),
+            #nn.BatchNorm2d(c_hid),
             act_fn(),
 
             nn.UpsamplingNearest2d(size=(a4, a4)),
             nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
                       kernel_size=3, padding='same'),
-            nn.BatchNorm2d(num_input_channels),
+            #nn.BatchNorm2d(num_input_channels),
             nn.Sigmoid()
         )
 

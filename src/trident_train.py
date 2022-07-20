@@ -104,7 +104,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
             ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
 
         evaluation_loss['elbo'].backward()
-
+        
         # Logging per train-task losses and accuracies
         tmp = [(iter*args.meta_batch_size)+batch, evaluation_accuracy.item()]
         tmp = tmp + [a.item() for a in evaluation_loss.values()]
@@ -119,6 +119,9 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     # Logging per validation-task losses and accuracies
     tmp = [iter, validation_accuracy.item()]
     tmp = tmp + [a.item() for a in validation_loss.values()]
+
+    # Gradient clipping to prevent explosion
+    torch.nn.utils.clip_grad_norm_(learner.parameters(), 1)
 
     # Meta backpropagation of gradients
     for p in learner.parameters():
