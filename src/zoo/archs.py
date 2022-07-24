@@ -414,7 +414,7 @@ class CEncoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  args,
-                 act_fn: object = nn.LeakyReLU(0.2)):
+                 act_fn: object = nn.LeakyReLU):
         """
         Inputs:
             - num_input_channels : Number of input channels of the image
@@ -430,25 +430,25 @@ class CEncoder(nn.Module):
             nn.Conv2d(num_input_channels, c_hid,
                       kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 1x1 # 5 x 5
             nn.Flatten()
         )
@@ -467,7 +467,7 @@ class TADCEncoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  args,
-                 act_fn: object = nn.LeakyReLU(0.2)):
+                 act_fn: object = nn.LeakyReLU):
         """
         Inputs:
             - num_input_channels : Number of input channels of the image
@@ -486,25 +486,25 @@ class TADCEncoder(nn.Module):
             nn.Conv2d(num_input_channels, c_hid,
                       kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
             nn.MaxPool2d(2)  # 1x1 # 5 x 5
         )
 
@@ -515,11 +515,11 @@ class TADCEncoder(nn.Module):
         self.fe = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=self.args.wm_channels, kernel_size=(  # 64 --> args.wm
                 self.n, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn(),
+            act_fn(0.2),
 
             nn.Conv2d(in_channels=self.args.wm_channels, out_channels=self.args.wn_channels, kernel_size=(  # 64 --> args.wm, 32 --> args.wn
                 1, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn())
+            act_fn(0.2))
 
         # Query, Key and Value extractors as 1x1 Convs
         self.f_q = nn.Conv2d(in_channels=self.args.wn_channels, out_channels=1, kernel_size=(  # 32 --> args.wn
@@ -541,11 +541,11 @@ class TADCEncoder(nn.Module):
 
         if (self.args.dataset == 'tiered' and self.args.k_shots == 5) or (self.args.dataset == 'miniimagenet' and self.args.k_shots == 5):
             xq = self.f_q(G)
-            xq = nn.ReLU()(xq)
+            xq = nn.LeakyReLU(0.2)(xq)
             xk = self.f_k(G)
-            xk = nn.ReLU()(xk)
+            xk = nn.LeakyReLU(0.2)(xk)
             xv = self.f_v(G)
-            xv = nn.ReLU()(xv)
+            xv = nn.LeakyReLU(0.2)(xv)
         else:
             xq = self.f_q(G)
             xk = self.f_k(G)
@@ -587,7 +587,7 @@ class CDecoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  latent_dim: int,
-                 act_fn: object = nn.LeakyReLU(0.2)):
+                 act_fn: object = nn.LeakyReLU):
         """
         Inputs:
             - num_input_channels : Number of channels of the image to reconstruct.
@@ -601,7 +601,7 @@ class CDecoder(nn.Module):
 
         self.linear = nn.Sequential(
             nn.Linear(latent_dim, 25*c_hid),
-            act_fn()
+            act_fn(0.2)
         )
         a1 = 10
         a2 = 21
@@ -614,19 +614,19 @@ class CDecoder(nn.Module):
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                       kernel_size=3, padding='same'),
             #nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
 
             nn.UpsamplingNearest2d(size=(a2, a2)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                       kernel_size=3, padding='same'),
             #nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
 
             nn.UpsamplingNearest2d(size=(a3, a3)),
             nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
                       kernel_size=3, padding='same'),
             #nn.BatchNorm2d(c_hid),
-            act_fn(),
+            act_fn(0.2),
 
             nn.UpsamplingNearest2d(size=(a4, a4)),
             nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
@@ -680,7 +680,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_l drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, task_adapt, args, act_fn: object = nn.LeakyReLU(0.2)):
+    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, task_adapt, args, act_fn: object = nn.LeakyReLU):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
@@ -703,7 +703,7 @@ class Classifier_VAE(nn.Module):
             latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
 
         self.classifier = nn.Sequential(
-            nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn(),
+            nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn(0.2),
             nn.Linear(self.latent_dim_l//2, self.classes))
 
     def reparameterize(self, mu, logvar):
