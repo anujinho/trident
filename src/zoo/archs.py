@@ -414,7 +414,7 @@ class CEncoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  args,
-                 act_fn: object = nn.ReLU):
+                 act_fn: object = nn.LeakyReLU(0.2)):
         """
         Inputs:
             - num_input_channels : Number of input channels of the image
@@ -467,7 +467,7 @@ class TADCEncoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  args,
-                 act_fn: object = nn.ReLU):
+                 act_fn: object = nn.LeakyReLU(0.2)):
         """
         Inputs:
             - num_input_channels : Number of input channels of the image
@@ -587,7 +587,7 @@ class CDecoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  latent_dim: int,
-                 act_fn: object = nn.ReLU):
+                 act_fn: object = nn.LeakyReLU(0.2)):
         """
         Inputs:
             - num_input_channels : Number of channels of the image to reconstruct.
@@ -680,7 +680,7 @@ class Classifier_VAE(nn.Module):
     transforms an input image into latent-space gaussian distribution, and uses z_l drawn 
     from this distribution to produce logits for classification. """
 
-    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, task_adapt, args, act_fn: object = nn.ReLU):
+    def __init__(self, in_channels, base_channels, latent_dim_l, latent_dim_s, n_ways, task_adapt, args, act_fn: object = nn.LeakyReLU(0.2)):
         super(Classifier_VAE, self).__init__()
         self.in_channels = in_channels
         self.base_channels = base_channels
