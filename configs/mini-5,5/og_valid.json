@@ -1,7 +1,7 @@
 {
 "dataset": "miniimagenet",
 "root": "../../dataset/mini_imagenet",
-"model_path": "/home/nfs/anujsingh/meta_lrng/files/temp4/learning_to_meta-learn/logs/TRIDENT_miniimagenet_5-way_5-shot_10-queries/models-og",
+"model_path": "/home/nfs/anujsingh/meta_lrng/files/folder/learning_to_meta-learn/logs/TRIDENT_miniimagenet_5-way_5-shot_10-queries/models-og",
 "n_ways": 5,
 "k_shots": 5,
 "q_shots": 10,
