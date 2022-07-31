@@ -39,6 +39,7 @@ parser.add_argument('--wn-channels', type=int, default=32)
 parser.add_argument('--task_adapt', type=str)
 parser.add_argument('--experiment', type=str)
 parser.add_argument('--order', type=str)
+parser.add_argument('--download', type=str)
 parser.add_argument('--device', type=str)
 
 args = parser.parse_args()
