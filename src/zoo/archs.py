@@ -603,16 +603,15 @@ class CDecoder(nn.Module):
         super(CDecoder, self).__init__()
         c_hid = base_channel_size
         self.dataset = dataset
-
+        act_fn = nn.ReLU() if (args.dataset == 'tiered' and args.k_shots == 1) else nn.LeakyReLU(0.2)
         self.linear = nn.Sequential(
             nn.Linear(latent_dim, 25*c_hid),
-            act_fn(0.2)
+            act_fn
         )
         a1 = 10
         a2 = 21
         a3 = 42
         a4 = 84
-        act_fn = nn.ReLU() if (args.dataset == 'tiered' and args.k_shots == 1) else nn.LeakyReLU(0.2)
 
         if (args.dataset == 'miniimagenet' and args.k_shots == 5) or (args.dataset == 'tiered' and args.k_shots == 1):
             self.net = nn.Sequential(
@@ -738,8 +737,10 @@ class Classifier_VAE(nn.Module):
         self.gaussian_parametrizer = GaussianParametrizer(
             latent_dim=self.latent_dim_l, feature_dim=(fsize + self.latent_dim_s), args=args)
 
+        act_fn = nn.ReLU() if (args.dataset == 'tiered' and args.k_shots == 1) else nn.LeakyReLU(0.2)
+
         self.classifier = nn.Sequential(
-            nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn(0.2),
+            nn.Linear(self.latent_dim_l, self.latent_dim_l//2), act_fn,
             nn.Linear(self.latent_dim_l//2, self.classes))
 
     def reparameterize(self, mu, logvar):
