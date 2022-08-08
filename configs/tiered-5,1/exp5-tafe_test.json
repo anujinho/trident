@@ -9,6 +9,7 @@
 "inner_adapt_steps_test": 5,
 "inner_lr": 0.0015,
 "meta_lr": 0.00015,
+"reconstr": "std",
 "wt_ce": 150,
 "klwt": "False",
 "rec_wt": 0.01,
@@ -17,6 +18,8 @@
 "task_adapt": "True",
 "task_adapt_fn": "tafe",
 "alpha": 0.1,
+"zl": 64,
+"zs": 64,
 "experiment": "exp5-tafe",
 "order": "False",
 "device": "cuda"
