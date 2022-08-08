@@ -426,29 +426,31 @@ class CEncoder(nn.Module):
         c_hid = base_channel_size
         self.args = args
 
+        act_fn = nn.ReLU() if (self.args.dataset == 'tiered' and self.args.k_shots == 1) else nn.LeakyReLU(0.2)
+            
         self.net = nn.Sequential(
             nn.Conv2d(num_input_channels, c_hid,
                       kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 1x1 # 5 x 5
             nn.Flatten()
         )
@@ -482,29 +484,31 @@ class TADCEncoder(nn.Module):
         c_hid = base_channel_size
         self.args = args
 
+        act_fn = nn.ReLU() if (self.args.dataset == 'tiered' and self.args.k_shots == 1) else nn.LeakyReLU(0.2)
+
         self.net = nn.Sequential(
             nn.Conv2d(num_input_channels, c_hid,
                       kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 28 x 28, # 42 x 42
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 9x9 # 21 x 21
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2),  # 3x3 # 10 x 10
 
             # nn.ZeroPad2d(conv_padding),
             nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1),
             nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+            act_fn,
             nn.MaxPool2d(2)  # 1x1 # 5 x 5
         )
 
@@ -515,11 +519,11 @@ class TADCEncoder(nn.Module):
         self.fe = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=self.args.wm_channels, kernel_size=(  # 64 --> args.wm
                 self.n, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn(0.2),
+            act_fn,
 
             nn.Conv2d(in_channels=self.args.wm_channels, out_channels=self.args.wn_channels, kernel_size=(  # 64 --> args.wm, 32 --> args.wn
                 1, 1), stride=(1, 1), padding='valid', bias=False),
-            act_fn(0.2))
+            act_fn)
 
         # Query, Key and Value extractors as 1x1 Convs
         self.f_q = nn.Conv2d(in_channels=self.args.wn_channels, out_channels=1, kernel_size=(  # 32 --> args.wn
@@ -587,6 +591,7 @@ class CDecoder(nn.Module):
                  num_input_channels: int,
                  base_channel_size: int,
                  latent_dim: int,
+                 args,
                  act_fn: object = nn.LeakyReLU):
         """
         Inputs:
@@ -607,33 +612,64 @@ class CDecoder(nn.Module):
         a2 = 21
         a3 = 42
         a4 = 84
+        act_fn = nn.ReLU() if (args.dataset == 'tiered' and args.k_shots == 1) else nn.LeakyReLU(0.2)
 
-        self.net = nn.Sequential(
+        if (args.dataset == 'miniimagenet' and args.k_shots == 5) or (args.dataset == 'tiered' and args.k_shots == 1):
+            self.net = nn.Sequential(
 
-            nn.UpsamplingNearest2d(size=(a1, a1)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                      kernel_size=3, padding='same'),
-            #nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+                nn.UpsamplingNearest2d(size=(a1, a1)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                        kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn,
 
-            nn.UpsamplingNearest2d(size=(a2, a2)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                      kernel_size=3, padding='same'),
-            #nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+                nn.UpsamplingNearest2d(size=(a2, a2)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                        kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn,
 
-            nn.UpsamplingNearest2d(size=(a3, a3)),
-            nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
-                      kernel_size=3, padding='same'),
-            #nn.BatchNorm2d(c_hid),
-            act_fn(0.2),
+                nn.UpsamplingNearest2d(size=(a3, a3)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                        kernel_size=3, padding='same'),
+                nn.BatchNorm2d(c_hid),
+                act_fn,
 
-            nn.UpsamplingNearest2d(size=(a4, a4)),
-            nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
-                      kernel_size=3, padding='same'),
-            #nn.BatchNorm2d(num_input_channels),
-            nn.Sigmoid()
-        )
+                nn.UpsamplingNearest2d(size=(a4, a4)),
+                nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
+                        kernel_size=3, padding='same'),
+                nn.BatchNorm2d(num_input_channels),
+                nn.Sigmoid()
+            )
+
+        else:
+            self.net = nn.Sequential(
+
+                nn.UpsamplingNearest2d(size=(a1, a1)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                        kernel_size=3, padding='same'),
+                #nn.BatchNorm2d(c_hid),
+                act_fn,
+
+                nn.UpsamplingNearest2d(size=(a2, a2)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                        kernel_size=3, padding='same'),
+                #nn.BatchNorm2d(c_hid),
+                act_fn,
+
+                nn.UpsamplingNearest2d(size=(a3, a3)),
+                nn.Conv2d(in_channels=c_hid, out_channels=c_hid,
+                        kernel_size=3, padding='same'),
+                #nn.BatchNorm2d(c_hid),
+                act_fn,
+
+                nn.UpsamplingNearest2d(size=(a4, a4)),
+                nn.Conv2d(in_channels=c_hid, out_channels=num_input_channels,
+                        kernel_size=3, padding='same'),
+                #nn.BatchNorm2d(num_input_channels),
+                nn.Sigmoid()
+            )
+
 
     def forward(self, x):
         x = self.linear(x)
@@ -749,7 +785,7 @@ class CCVAE(nn.Module):
                                 base_channel_size=self.base_channels, args=args)
 
         self.decoder = CDecoder(num_input_channels=self.in_channels,
-                                base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l))
+                                base_channel_size=self.base_channels, latent_dim=(self.latent_dim_s + self.latent_dim_l), args=args)
 
         self.classifier_vae = Classifier_VAE(
             in_channels=self.in_channels, base_channels=self.base_channels, latent_dim_l=self.latent_dim_l, latent_dim_s=self.latent_dim_s, n_ways=self.classes, task_adapt=task_adapt, args=self.args)
