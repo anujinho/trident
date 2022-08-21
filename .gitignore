@@ -12,8 +12,8 @@ trying_task-adapt.ipynb
 trying_vae.ipynb
 # Script graveyeard
 src/utils.py
-viz.ipynb
-wandb_trying.ipynb
+src/viz.ipynb
+src/wandb_trying.ipynb
 commands.txt
 improve_delpo
 data/cdfsl
