@@ -3,19 +3,19 @@ logs/
 configs_og
 */.ipynb_checkpoints
 .ipynb_checkpoints
+commands.txt
+improve_delpo
 # Notebooks
-pre-models.ipynb
-try.ipynb
-trying_archs.ipynb
-trying_cdfsl.ipynb
-trying_task-adapt.ipynb
-trying_vae.ipynb
+src/pre-models.ipynb
+src/try.ipynb
+src/trying_archs.ipynb
+src/trying_cdfsl.ipynb
+src/trying_task-adapt.ipynb
+src/trying_vae.ipynb
 # Script graveyeard
 src/utils.py
 src/viz.ipynb
 src/wandb_trying.ipynb
-commands.txt
-improve_delpo
 data/cdfsl
 src/config.py
 src/cubloader.py
