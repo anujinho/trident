@@ -1,1 +1,46 @@
+# Local data
 logs/
+configs_og
+*/.ipynb_checkpoints
+.ipynb_checkpoints
+## Notebooks
+pre-models.ipynb
+try.ipynb
+trying_archs.ipynb
+trying_cdfsl.ipynb
+trying_task-adapt.ipynb
+trying_vae.ipynb
+# Script graveyeard
+utils.py
+viz.ipynb
+wandb_trying.ipynb
+commands.txt
+improve_delpo
+data/cdfsl
+src/config.py
+src/cubloader.py
+src/delpo_cdfsl.py
+src/delpo_epi.py
+src/delpo_og.py
+src/delpo_pt.py
+src/delpo_temp.py
+src/delpo_test_og.py
+src/delpo_valid_og.py
+src/lpo.py
+src/maml_test.py
+src/maml.py
+src/matching_nets.py
+src/miniloader.py
+src/proto.py
+src/protol2ltest.py
+src/test.py
+
+src/zoo/archs_og.py
+src/zoo/delpo_epi_utils.py
+src/zoo/delpo_utils_cdfsl.py
+src/zoo/delpo_utils_og.py
+src/zoo/lpo_utils.py
+src/zoo/maml_utils.py
+src/zoo/matching_nets_utils.py
+src/zoo/proto_utils.py
+

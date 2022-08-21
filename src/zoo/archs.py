@@ -391,7 +391,6 @@ class GaussianParametrizer(nn.Module):
         """
         Inputs:
             - latent_dim : Dimensionality of latent representation z
-            - dataset: name of the dataset
             - feature_dim: dimensionality of the input feature
             - act_fn : Activation function used throughout the network (if at all)
         """
@@ -419,7 +418,6 @@ class CEncoder(nn.Module):
         Inputs:
             - num_input_channels : Number of input channels of the image
             - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
-            - dataset: name of the dataset
             - act_fn : Activation function used throughout the encoder network
         """
         super(CEncoder, self).__init__()
@@ -474,7 +472,6 @@ class TADCEncoder(nn.Module):
         Inputs:
             - num_input_channels : Number of input channels of the image
             - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
-            - dataset: name of the dataset
             - task_adapt_fn: EAEN (eaen) or Kernel Smoothing (gks)
             - args: dict of arguments
             - act_fn : Activation function used throughout the encoder network
