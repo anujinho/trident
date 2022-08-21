@@ -3,7 +3,7 @@ logs/
 configs_og
 */.ipynb_checkpoints
 .ipynb_checkpoints
-## Notebooks
+# Notebooks
 pre-models.ipynb
 try.ipynb
 trying_archs.ipynb
@@ -11,7 +11,7 @@ trying_cdfsl.ipynb
 trying_task-adapt.ipynb
 trying_vae.ipynb
 # Script graveyeard
-utils.py
+src/utils.py
 viz.ipynb
 wandb_trying.ipynb
 commands.txt
