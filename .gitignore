@@ -1,6 +1,7 @@
 # Local data
 logs/
 configs_og
+configs/ablation
 */.ipynb_checkpoints
 .ipynb_checkpoints
 commands.txt
