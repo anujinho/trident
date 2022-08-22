@@ -11,35 +11,21 @@ The proposed approach is devised to learn meaningful representations that captur
 <img src="images/Intuition.png" width="600" >
 </p>
 
-<!-- <table style="center">
-<tr> Architecture </tr>
-<tr> <td> <img src="images/NN.png"  alt="1" width = 500> </td> </tr>
-<tr> <td> <img src="images/algo_trident.png"  alt="1" width = 500> </td> </tr>
-<tr> <td> <img src="images/algo_e2e.png"  alt="1" width = 500> </td> </tr>
-</table> -->
 
 # Algorithm
 <center> 
 
 Architecture             |
 :-------------------------:|
-<img src="images/NN.png" width=600>| 
+<img src="images/NN.png" width=500>| 
 
 </center>
 
 <p align="center">
 
-Data Flow             |
-:-------------------------:|
-<img src="images/algo_trident.png" width=500>| 
-
-</p>
-
-<p align="center">
-
-End-to-End Training             |
-:-------------------------:|
-<img src="images/algo_e2e.png" width=500>| 
+Data Flow             | End-to-End Training             |
+:-------------------------:| :-------------------------:|
+<img src="images/algo_trident.png" width=500>| <img src="images/algo_e2e.png" width=500>| 
 
 </p>
 
