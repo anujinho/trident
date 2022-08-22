@@ -101,7 +101,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
         model = learner.clone()
 
         evaluation_loss, evaluation_accuracy = inner_adapt_trident(
-            ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
+            ttask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args, "No")
 
         evaluation_loss['elbo'].backward()
         
@@ -114,7 +114,7 @@ for iter in tqdm.tqdm(range(start, args.iterations)):
     model = learner.clone()
 
     validation_loss, validation_accuracy = inner_adapt_trident(
-        vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args)
+        vtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_train, args.device, False, args, "No")
 
     # Logging per validation-task losses and accuracies
     tmp = [iter, validation_accuracy.item()]

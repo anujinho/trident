@@ -100,7 +100,7 @@ for model_name in os.listdir(args.model_path):
         model = learner.clone()
         valtask = valid_tasks.sample()
         evaluation_loss, evaluation_accuracy = inner_adapt_trident(
-            valtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_val, args.device, False, args)
+            valtask, reconst_loss, model, args.n_ways, args.k_shots, args.q_shots, args.inner_adapt_steps_val, args.device, False, args, "No")
 
         # Logging per test-task losses and accuracies
         tmp = [i, evaluation_accuracy.item()]

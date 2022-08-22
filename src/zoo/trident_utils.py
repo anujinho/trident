@@ -92,7 +92,7 @@ def loss(reconst_loss: object, reconst_image, image, logits, labels, mu_s, log_v
     return losses
 
 
-def inner_adapt_trident(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args, extra="No"):
+def inner_adapt_trident(task, reconst_loss, learner, n_ways, k_shots, q_shots, adapt_steps, device, log_data: bool, args, extra):
     data, labels = task
     if args.dataset == 'miniimagenet':
         data, labels = data.to(device) / 255.0, labels.to(device)

@@ -6,6 +6,10 @@ configs/ablation
 .ipynb_checkpoints
 commands.txt
 improve_delpo
+data/cub_meta-info.json
+data/fungi_meta-info.json
+data/aircraft_meta-info.json
+
 # Notebooks
 src/pre-models.ipynb
 src/try.ipynb
@@ -13,6 +17,8 @@ src/trying_archs.ipynb
 src/trying_cdfsl.ipynb
 src/trying_task-adapt.ipynb
 src/trying_vae.ipynb
+analysis.ipynb
+
 # Script graveyeard
 src/utils.py
 src/viz.ipynb

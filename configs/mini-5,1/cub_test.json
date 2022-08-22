@@ -1,7 +1,7 @@
 {
 "dataset": "cub",
-"root": "../../dataset",
-"model_path": "/home/nfs/anujsingh/meta_lrng/files/folder/learning_to_meta-learn/logs/TRIDENT_miniimagenet_5-way_1-shot_10-queries/models-og-best",
+"root": "./dataset",
+"model_path": "./models/mini-5,1/",
 "n_ways": 5,
 "k_shots": 1,
 "q_shots": 10,
@@ -17,7 +17,7 @@
 "zl": 64,
 "zs": 64,
 "task_adapt": "True",
-"experiment": "og",
+"experiment": "exp1",
 "order": "False",
 "device": "cuda",
 "times": 1,

@@ -472,7 +472,6 @@ class TADCEncoder(nn.Module):
         Inputs:
             - num_input_channels : Number of input channels of the image
             - base_channel_size : Number of channels we use in the first convolutional layers. Deeper layers use 2x of it.
-            - task_adapt_fn: EAEN (eaen) or Kernel Smoothing (gks)
             - args: dict of arguments
             - act_fn : Activation function used throughout the encoder network
         """
