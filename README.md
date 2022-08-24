@@ -1,5 +1,5 @@
 # CodeBase of TRIDENT
-This is the official repository for [Transductive Decoupled Variational Inference For Few Shot Classification](arxiv.com) (Anuj Singh, Hadi Jamali-Rad)
+This is the official repository for [Transductive Decoupled Variational Inference For Few Shot Classification](https://arxiv.org/abs/2208.10559) (Anuj Singh, Hadi Jamali-Rad)
 
 
 # Abstract
