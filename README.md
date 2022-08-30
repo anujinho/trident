@@ -67,3 +67,14 @@ Corresponding author: Anuj Singh (<anujrsingh1@gmail.com>; <a.r.singh@student.tu
 
 # References
 This repository utilizes and builds on top of the [learn2learn](https://github.com/learnables/learn2learn/) software library for meta-learning research.
+
+# Citation
+
+```(bibtex)
+@article{singh2022transductive,
+  title={Transductive Decoupled Variational Inference for Few-Shot Classification},
+  author={Singh, Anuj and Jamali-Rad, Hadi},
+  journal={arXiv preprint arXiv:2208.10559},
+  year={2022}
+}
+```
