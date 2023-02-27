@@ -18,26 +18,6 @@ The proposed approach is devised to learn meaningful representations that captur
 </p>
 
 
-# Algorithm
-<div style="margin-left: 70px;
-            margin-right: auto;
-            width: 100%">
-
-Architecture             |
-:-------------------------:|
-<img src="images/NN.png" width=600>| 
-
-</div>
-
-<p align="center">
-
-Data Flow             | End-to-End Training             |
-:-------------------------:| :-------------------------:|
-<img src="images/algo_trident.png" width=500>| <img src="images/algo_e2e.png" width=500>| 
-
-</p>
-
-
 # Walkthrough
 Directories containing the mentioned files/scripts and their descriptions: 
 * `configs`: Contains train and test configs of mini and tieredImagenet for (5-way, 1 and 5-shot) settings. The params have been set to their corresponding best hyperparameter settings. For more details on what each field of the .json's mean, check their descriptions in `src/trident_train.py`, `src/trident_test.py`. Make sure to check that the paths in their respective fields are set correctly. 
