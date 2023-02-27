@@ -14,7 +14,7 @@ The versatility to learn from a handful of samples is the hallmark of human inte
 # Key Idea
 The proposed approach is devised to learn meaningful representations that capture two pivotal characteristics of an image by modelling them as separate latent variables: (i) *z*<sub>c</sub> representing _semantics_, and (ii) *z*<sub>l</sub> embodying class _labels_. Inferring these two latent variables simultaneously allows *z*<sub>l</sub> to learn meaningful distributions of class-discriminating characteristics _decoupled_ from semantic features represented by *z*<sub>c</sub>. We argue that learning *z*<sub>l</sub> as the sole latent variable for classification results in capturing a mixture of true label and other semantic information. This in turn can lead to sub-optimal classification performance, especially in a few-shot setting where the information per class is scarce and the network has to adapt and generalize quickly. By inferring decoupled label and semantics latent variables, we inject a handcrafted inductive-bias that incorporates only relevant characteristics, and thus, ameliorates the network's classification performance.
 <p align="center">
-<img src="images/Intuition.png" width="700" >
+<img src="images/Intuition1.png" width="700" >
 </p>
 
 
