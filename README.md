@@ -59,10 +59,14 @@ This repository utilizes and builds on top of the [learn2learn](https://github.c
 # Citation
 
 ```(bibtex)
-@article{singh2022transductive,
-  title={Transductive Decoupled Variational Inference for Few-Shot Classification},
-  author={Singh, Anuj and Jamali-Rad, Hadi},
-  journal={arXiv preprint arXiv:2208.10559},
-  year={2022}
+@article{
+singh2023transductive,
+title={Transductive Decoupled Variational Inference for Few-Shot Classification},
+author={Anuj Rajeeva Singh and Hadi Jamali-Rad},
+journal={Transactions on Machine Learning Research},
+issn={2835-8856},
+year={2023},
+url={https://openreview.net/forum?id=bomdTc9HyL},
+note={}
 }
 ```
